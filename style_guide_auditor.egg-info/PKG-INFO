@@ -1,0 +1,10 @@
+Metadata-Version: 2.4
+Name: style_guide_auditor
+Version: 0.1.0
+Summary: RAG based style guide checker
+Requires-Dist: llama-index-core
+Requires-Dist: llama-index-vector-stores-chroma
+Requires-Dist: llama-index-embeddings-google
+Requires-Dist: chromadb
+Requires-Dist: spacy
+Requires-Dist: python-dotenv

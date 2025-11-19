@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "style_guide_auditor"
+version = "0.1.0"
+description = "RAG based style guide checker"
+dependencies = [
+    "llama-index-core",
+    "llama-index-vector-stores-chroma",
+    "llama-index-embeddings-google",
+    "chromadb",
+    "spacy",
+    "python-dotenv"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

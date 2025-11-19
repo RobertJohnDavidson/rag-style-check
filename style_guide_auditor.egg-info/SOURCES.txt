@@ -1,0 +1,10 @@
+pyproject.toml
+src/__init__.py
+src/audit.py
+src/ingest.py
+src/retrieval_test.py
+style_guide_auditor.egg-info/PKG-INFO
+style_guide_auditor.egg-info/SOURCES.txt
+style_guide_auditor.egg-info/dependency_links.txt
+style_guide_auditor.egg-info/requires.txt
+style_guide_auditor.egg-info/top_level.txt
