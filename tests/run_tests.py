@@ -1,6 +1,8 @@
 import json
 import time
 import os
+import argparse
+import random
 from src import StyleAuditor
 from dotenv import load_dotenv
 from datetime import datetime
@@ -48,7 +50,7 @@ def save_results(stats, detailed_logs, report_text):
 
     print(f"\n💾 Results saved to:\n   - {json_filename}\n   - {txt_filename}")
 
-def run_evaluation():
+def run_evaluation(limit=None, randomize=False):
     print(f"Initializing Auditor ({MODEL})...")
     auditor = StyleAuditor()
     
@@ -58,6 +60,14 @@ def run_evaluation():
 
     with open(TEST_FILE, 'r') as f:
         test_cases = json.load(f)
+    
+    if randomize:
+        print("🎲 Randomizing test selection...")
+        random.shuffle(test_cases)
+        
+    if limit:
+        print(f"✂️ Limiting to {limit} tests...")
+        test_cases = test_cases[:limit]
     
     stats = {
         "total": 0,
@@ -191,4 +201,9 @@ def run_evaluation():
     save_results(stats, detailed_logs, full_report_text)
 
 if __name__ == "__main__":
-    run_evaluation()
+    parser = argparse.ArgumentParser(description="Run style guide tests.")
+    parser.add_argument("--limit", type=int, help="Number of tests to run")
+    parser.add_argument("--random", action="store_true", help="Randomize test selection")
+    args = parser.parse_args()
+    
+    run_evaluation(limit=args.limit, randomize=args.random)
