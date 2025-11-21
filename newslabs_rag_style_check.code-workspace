@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "newslabs_rag_style_check",
+			"path": "."
+		},
+		{
+			"name": "generate_test_text",
+			"path": "../localllm_experiments/generate_test_text"
+		}
+	],
+	"settings": {}
+}

@@ -1,480 +1,480 @@
 [
   {
-    "text": "The new government regulations will have nationwide implications for businesses.",
+    "text": "She claimed to be a direct descendent of the first president.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The new government regulations will have countrywide implications for businesses.",
-    "target_rule": "-wide (as a suffix)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "expected_correction": "She claimed to be a direct descendant of the first president.",
+    "target_rule": "descendant, descendent",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The company's marketing campaign successfully reached a worldwide audience.",
+    "text": "The genealogist helped him trace his descendants and ancestors.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "-wide (as a suffix)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "descendant, descendent",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The forest fire caused widespread damage to the ecosystem.",
+    "text": "The descending staircase led to a hidden chamber.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "-wide (as a suffix)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "descendant, descendent",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The price of Western Canada Select, a heavy oil blend, dipped below expectations today.",
+    "text": "The company's board approved the new budget.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The price of Western Canadian Select, a heavy oil blend, dipped below expectations today.",
-    "target_rule": "Western Canadian Select (WCS)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "expected_correction": "The company's Board approved the new budget.",
+    "target_rule": "Board versus board",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Western Canadian Select (WCS), a key benchmark for heavy oil from Alberta, saw its price fluctuate significantly this quarter.",
+    "text": "The Board of Directors issued a statement after reviewing the financial reports.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "target_rule": "Board versus board",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "The carpenter planed the rough board until it was smooth.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "target_rule": "Board versus board",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "The British Academy of Film and Television Arts announced its nominations yesterday.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "BAFTA announced its nominations yesterday.",
+    "target_rule": "BAFTA",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "The BAFTA Film Awards are an annual event celebrating cinematic excellence.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "Western Canadian Select (WCS)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "BAFTA",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "The Western Canadian provinces offer a select range of outdoor activities for tourists.",
+    "text": "The new chef prepared a delicious seafood paella for the guests.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "Western Canadian Select (WCS)",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "BAFTA",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "The Bombardier aimed the weapon with precision.",
+    "text": "The early 2000s saw the rise and fall of many dotcom businesses.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The bombardier aimed the weapon with precision.",
-    "target_rule": "bombardier",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "expected_correction": "The early 2000s saw the rise and fall of many dot-com businesses.",
+    "target_rule": "dot-com",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "Bombardier Jones reported for duty.",
+    "text": "Many dot-com companies struggled to survive the market downturn.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "bombardier",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "dot-com",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "Bombardier is a well-known Canadian company.",
+    "text": "Please visit our website at example.com for further details.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "bombardier",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "dot-com",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "Many nations in the Third World are still developing their infrastructure.",
+    "text": "The RCMP is investigating the recent cyber attack.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "Many developing nations are still developing their infrastructure.",
-    "target_rule": "Old World, New World, Third World",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "expected_correction": "The RCMP are investigating the recent cyber attack.",
+    "target_rule": "RCMP (plural usage)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
   },
   {
-    "text": "Developing countries often face significant economic hurdles.",
+    "text": "The RCMP are actively patrolling the border regions.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "Old World, New World, Third World",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "RCMP (plural usage)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
   },
   {
-    "text": "She admired the intricate details of the old world craftsmanship.",
+    "text": "The RCMP headquarters is located in Ottawa.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "Old World, New World, Third World",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "RCMP (plural usage)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
   },
   {
-    "text": "The high commissioner announced the new policy.",
+    "text": "Our flight to Dar Es Salaam was delayed.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "High Commissioner Brian Kemp announced the new policy.",
-    "target_rule": "high commissioner",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "expected_correction": "Our flight to Dar es Salaam was delayed.",
+    "target_rule": "Dar es Salaam",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "High Commissioner Brian Kemp addressed the media at the press conference.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "expected_correction": null,
-    "target_rule": "high commissioner",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The United Nations High Commissioner for Human Rights presented their annual report.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "expected_correction": null,
-    "target_rule": "high commissioner",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The prolonged heatwave led to widespread power outages across the region.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "The prolonged heat wave led to widespread power outages across the region.",
-    "target_rule": "heat wave",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "Meteorologists issued a warning for an extreme heat wave expected this summer.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "expected_correction": null,
-    "target_rule": "heat wave",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The heat from the oven caused a small wave in the plastic container.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "expected_correction": null,
-    "target_rule": "heat wave",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The activist started a hunger-strike to protest the government's policies.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "The activist started a hunger strike to protest the government's policies.",
-    "target_rule": "hunger strike",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "Several detainees announced they would begin a hunger strike if their demands were not met.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "expected_correction": null,
-    "target_rule": "hunger strike",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The workers decided to go on strike for better wages and conditions.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "expected_correction": null,
-    "target_rule": "hunger strike",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "He decided to withhold the information from to the committee.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "He decided to withhold the information from the committee.",
-    "target_rule": "withhold",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
-  },
-  {
-    "text": "The government decided to withhold the classified documents for national security reasons.",
+    "text": "Dar es Salaam is the largest city in Tanzania.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": "",
-    "target_rule": "withhold",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "Dar es Salaam",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "She chose to retain her comments until the end of the meeting.",
+    "text": "Have you ever been to Dakar, Senegal?",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": "",
-    "target_rule": "withhold",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "Dar es Salaam",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The Countess of Wessex was present at the royal engagement, greeting the public warmly.",
+    "text": "The child's disruptive behavior in class led to a detention.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The Duchess of Edinburgh was present at the royal engagement, greeting the public warmly.",
-    "target_rule": "Duchess of Edinburgh",
-    "target_url": "https://language-guide.cbcrc.ca/home/r/royal-titles"
+    "expected_correction": "The child's disruptive behaviour in class led to a detention.",
+    "target_rule": "behaviour",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Princess Edward's wife, Sophie Rhys-Jones, has been the Duchess of Edinburgh since 2023.",
+    "text": "Her professional behaviour during the meeting was commendable.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": "",
-    "target_rule": "Duchess of Edinburgh",
-    "target_url": "https://language-guide.cbcrc.ca/home/r/royal-titles"
+    "target_rule": "behaviour",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "The city of Edinburgh is renowned for its historic castle and vibrant arts scene.",
+    "text": "It's important to behave appropriately in formal settings.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": "",
-    "target_rule": "Duchess of Edinburgh",
-    "target_url": "https://language-guide.cbcrc.ca/home/r/royal-titles"
+    "target_rule": "behaviour",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Many people visit Whitehorse during the winter for the northern lights.",
+    "text": "The news outlet decided against using 'favela' in their report, citing concerns that the term was too obscure for their audience without a brief definition.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "Many people visit Whitehorse, Yukon, during the winter for the northern lights.",
-    "target_rule": "Whitehorse, Yukon",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "expected_correction": "The news outlet used the term *favela* (Portuguese for shantytown in Brazil) in their report.",
+    "target_rule": "favela",
+    "target_url": "https://language-guide.cbcrc.ca/home/s/slum-ghetto-shantytown"
   },
   {
-    "text": "The flight from Vancouver landed in Whitehorse, Yukon, late in the evening.",
+    "text": "The documentary explored daily life within a Brazilian *favela*, a shantytown known for its vibrant community spirit.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "Whitehorse, Yukon",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "favela",
+    "target_url": "https://language-guide.cbcrc.ca/home/s/slum-ghetto-shantytown"
   },
   {
-    "text": "She admired the majestic white horse galloping across the field.",
+    "text": "The government pledged to improve living conditions in the urban slums of the capital city.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "Whitehorse, Yukon",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "favela",
+    "target_url": "https://language-guide.cbcrc.ca/home/s/slum-ghetto-shantytown"
   },
   {
-    "text": "The new projector delivered a stunning wide screen image.",
+    "text": "She decided to die her hair blue for the party.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The new projector delivered a stunning widescreen image.",
-    "target_rule": "widescreen, widescreen TV",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "expected_correction": "She decided to dye her hair blue for the party.",
+    "target_rule": "dye, dyeing",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "Our living room features a large widescreen TV perfect for family movie nights.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "target_rule": "widescreen, widescreen TV",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
-  },
-  {
-    "text": "He described the view as a truly wide screen of mountains and valleys.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "target_rule": "widescreen, widescreen TV",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
-  },
-  {
-    "text": "The Air Commodore was promoted last year, a significant achievement for any officer.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "The air commodore was promoted last year, a significant achievement for any officer.",
-    "target_rule": "air commodore",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
-  },
-  {
-    "text": "Air Commodore Jones will brief the squadron, and the air commodore expects full attention.",
+    "text": "The process of dyeing natural fibers can be quite intricate.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": "",
-    "target_rule": "air commodore",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "dye, dyeing",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The chief commodore of the yacht club organized the annual regatta.",
+    "text": "Many of the old traditions are slowly dying out.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": "",
-    "target_rule": "air commodore",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "dye, dyeing",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The latest CBC-Harris-Decima survey results were published this morning.",
+    "text": "For the upcoming gala, a full-length gown was considered de rigeur among the attendees.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The latest CBC Harris-Decima survey results were published this morning.",
-    "target_rule": "Harris-Decima",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "expected_correction": "For the upcoming gala, a full-length gown was considered de rigueur among the attendees.",
+    "target_rule": "de rigueur",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "A Harris-Decima study confirmed the public's growing concern over the economy.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "expected_correction": null,
-    "target_rule": "Harris-Decima",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The Ipsos-Reid polling firm also released its findings on consumer confidence.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "expected_correction": null,
-    "target_rule": "Harris-Decima",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The High-Definition Television broadcast began at 8 PM.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "The HDTV broadcast began at 8 PM.",
-    "target_rule": "HDTV",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "Our new HDTV provides an immersive viewing experience.",
-    "expected_violation": false,
-    "test_type": "compliance",
-    "expected_correction": null,
-    "target_rule": "HDTV",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The artist's meticulous work showed a high degree of definition in every brushstroke.",
-    "expected_violation": false,
-    "test_type": "ambiguous",
-    "expected_correction": null,
-    "target_rule": "HDTV",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
-  },
-  {
-    "text": "The unexpected earthquake wrought widespread destruction across the region.",
-    "expected_violation": true,
-    "test_type": "violation",
-    "expected_correction": "The unexpected earthquake wreaked widespread destruction across the region.",
-    "target_rule": "wreak, wreaked",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
-  },
-  {
-    "text": "The protesters' actions wreaked political havoc on the city council.",
+    "text": "A formal address to the monarch is de rigueur when presenting credentials.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": "",
-    "target_rule": "wreak, wreaked",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "de rigueur",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The artist carefully wrought the intricate details into the metal sculpture.",
+    "text": "The strictness of the dress code required careful adherence to every detail.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": "",
-    "target_rule": "wreak, wreaked",
-    "target_url": "https://language-guide.cbcrc.ca/home/w"
+    "target_rule": "de rigueur",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   },
   {
-    "text": "The Holodomor, while tragic, was primarily a natural famine caused by poor harvests, not a deliberate act.",
+    "text": "In the endgame, it was Bishop vs bishop, a tense struggle.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The Holodomor was the Soviet-orchestrated mass famine that killed millions of Ukrainians in the early 1930s and is recognized as a genocide by many governments around the world, including Canada.",
-    "target_rule": "Holodomor",
-    "target_url": "https://language-guide.cbcrc.ca/home/g/genocide"
+    "expected_correction": "In the endgame, it was Bishop versus bishop, a tense struggle.",
+    "target_rule": "Bishop versus bishop",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Historians continue to study the Holodomor to understand the mechanisms of Soviet-era atrocities.",
+    "text": "The tactical analysis focused on the potential for a Bishop versus bishop exchange.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "Holodomor",
-    "target_url": "https://language-guide.cbcrc.ca/home/g/genocide"
+    "target_rule": "Bishop versus bishop",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "The Great Famine of 1845-1849 devastated Ireland, leading to mass emigration and death.",
+    "text": "The theological discussion pitted the senior bishop versus the junior bishop on a doctrinal point.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "Holodomor",
-    "target_url": "https://language-guide.cbcrc.ca/home/g/genocide"
+    "target_rule": "Bishop versus bishop",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Spc. Miller was tasked with maintaining the unit's communications equipment.",
+    "text": "The new COVID-19 variant, known officially as B.1.1.7, is spreading rapidly across the globe.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "Specialist Miller was tasked with maintaining the unit's communications equipment.",
-    "target_rule": "specialist",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "expected_correction": "The new COVID-19 variant, first identified in the U.K., is spreading rapidly across the globe.",
+    "target_rule": "Virus mutations (designations)",
+    "target_url": "https://language-guide.cbcrc.ca/home/b/bacteria-versus-virus"
   },
   {
-    "text": "Specialist Johnson earned a promotion for his exceptional technical skills.",
+    "text": "Scientists are closely tracking the emergence of various virus mutations to assess their potential impact on public health.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "specialist",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "Virus mutations (designations)",
+    "target_url": "https://language-guide.cbcrc.ca/home/b/bacteria-versus-virus"
   },
   {
-    "text": "The company hired a new marketing specialist to boost their online presence.",
+    "text": "The military uses complex alphanumeric designations for its equipment, such as 'F-22 Raptor' for its advanced fighter jet.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "specialist",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "Virus mutations (designations)",
+    "target_url": "https://language-guide.cbcrc.ca/home/b/bacteria-versus-virus"
   },
   {
-    "text": "Many tourists believe that Holland is the official name of the country known for its windmills and tulips.",
+    "text": "Eh bien, I think we have a problem here.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "Many tourists believe that the Netherlands is the official name of the country known for its windmills and tulips.",
-    "target_rule": "Holland",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "expected_correction": "Well, I think we have a problem here.",
+    "target_rule": "eh bien",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The provinces of North Holland and South Holland are located in the western part of the Netherlands.",
+    "text": "Well, I think we have a solution to the problem.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": "",
-    "target_rule": "Holland",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "target_rule": "eh bien",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The famous architect, John Holland, presented his innovative design for the new museum.",
+    "text": "Eh, I'm not entirely convinced by that argument.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": "",
-    "target_rule": "Holland",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "target_rule": "eh bien",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The command announced that a new Commissioned Warrant Officer would be assigned to the unit.",
+    "text": "The new public art installation will be unveiled on boulevard de Maisonneuve next month.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The command announced that a new commissioned warrant officer would be assigned to the unit.",
-    "target_rule": "commissioned warrant officer",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "expected_correction": "The new public art installation will be unveiled on De Maisonneuve Boulevard next month.",
+    "target_rule": "De Maisonneuve Boulevard",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The recently promoted commissioned warrant officer, Commissioned Warrant Officer Johnson, received his orders.",
+    "text": "Many of Montreal's tallest buildings are situated along De Maisonneuve Boulevard.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "commissioned warrant officer",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "De Maisonneuve Boulevard",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The general commissioned several officers, including one who had previously served with a warrant.",
+    "text": "The historic Maisonneuve market is just a short walk from several major boulevards.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "commissioned warrant officer",
-    "target_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+    "target_rule": "De Maisonneuve Boulevard",
+    "target_url": "https://language-guide.cbcrc.ca/home/f/french-words-and-accents"
   },
   {
-    "text": "The militant group 'Hammas' launched rockets into the region.",
+    "text": "The message was written in brail, making it difficult to read for those unfamiliar with the system.",
     "expected_violation": true,
     "test_type": "violation",
-    "expected_correction": "The militant group 'Hamas' launched rockets into the region.",
-    "target_rule": "Hamas",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "expected_correction": "The message was written in braille, making it difficult to read for those unfamiliar with the system.",
+    "target_rule": "braille",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "Hamas is a Palestinian Sunni-Islamist fundamentalist organization.",
+    "text": "The blind student used a special device to read the braille text aloud.",
     "expected_violation": false,
     "test_type": "compliance",
     "expected_correction": null,
-    "target_rule": "Hamas",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "target_rule": "braille",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
   },
   {
-    "text": "The local baker makes delicious hummus, a traditional Middle Eastern dip.",
+    "text": "They followed the winding trail through the dense forest, enjoying the fresh air.",
     "expected_violation": false,
     "test_type": "ambiguous",
     "expected_correction": null,
-    "target_rule": "Hamas",
-    "target_url": "https://language-guide.cbcrc.ca/home/h"
+    "target_rule": "braille",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Politics is often about compromise and negotiation between opposing factions.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "Politics are often about compromise and negotiation between opposing factions.",
+    "target_rule": "Politics (partisan positions)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
+  },
+  {
+    "text": "Politics have become increasingly divisive in recent years.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "expected_correction": "",
+    "target_rule": "Politics (partisan positions)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
+  },
+  {
+    "text": "Politics is a challenging field of study for many students.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "expected_correction": "",
+    "target_rule": "Politics (partisan positions)",
+    "target_url": "https://language-guide.cbcrc.ca/home/v/verb-agreement"
+  },
+  {
+    "text": "The historical event known as the bay of pigs invasion occurred in Cuba.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "The historical event known as the Bay of Pigs Invasion occurred in Cuba.",
+    "target_rule": "bay, Hudson Bay, Bay of Pigs",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Explorers navigated the vast waters of Hudson Bay.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "expected_correction": "",
+    "target_rule": "bay, Hudson Bay, Bay of Pigs",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "She admired the new bay window in her living room.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "expected_correction": "",
+    "target_rule": "bay, Hudson Bay, Bay of Pigs",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Ban Ki-moon became the eighth UN secretary general. During his tenure, Ban Ki-moon focused on climate change.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "Ban Ki-moon became the eighth UN secretary general. During his tenure, Ban focused on climate change.",
+    "target_rule": "Ban Ki-moon",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Ban Ki-moon assumed office on Jan. 1, 2007. Ban traveled extensively to promote peace.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "expected_correction": null,
+    "target_rule": "Ban Ki-moon",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "The city council voted to ban public smoking in parks.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "expected_correction": null,
+    "target_rule": "Ban Ki-moon",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "BNN announced a new partnership with a global investment firm this morning.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "Business News Network announced a new partnership with a global investment firm this morning.",
+    "target_rule": "Business News Network",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Business News Network will air a special report tonight. BNN's coverage will focus on the energy sector.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "expected_correction": "",
+    "target_rule": "Business News Network",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "The local Broadcast News Network (BNN) covered the community event extensively.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "expected_correction": "",
+    "target_rule": "Business News Network",
+    "target_url": "https://language-guide.cbcrc.ca/home/b"
+  },
+  {
+    "text": "Many people renewed their driver's licences last month.",
+    "expected_violation": true,
+    "test_type": "violation",
+    "expected_correction": "Many people renewed their drivers' licences last month.",
+    "target_rule": "driver's licence, drivers' licences",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
+  },
+  {
+    "text": "She finally got her driver's licence after years of practice.",
+    "expected_violation": false,
+    "test_type": "compliance",
+    "expected_correction": "",
+    "target_rule": "driver's licence, drivers' licences",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
+  },
+  {
+    "text": "The bus driver's schedule was updated this morning.",
+    "expected_violation": false,
+    "test_type": "ambiguous",
+    "expected_correction": "",
+    "target_rule": "driver's licence, drivers' licences",
+    "target_url": "https://language-guide.cbcrc.ca/home/d"
   }
 ]

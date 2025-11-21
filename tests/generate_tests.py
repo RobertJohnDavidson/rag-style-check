@@ -4,7 +4,6 @@ import json
 import glob
 from datetime import datetime
 from google import genai
-from google.genai import types
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,9 +17,7 @@ MODEL = os.getenv("MODEL")
 
 NUM_RULES_TO_TEST = 20
 
-
 def get_random_rules(num_rules):
-    # Read JSON files instead of TXT
     files = glob.glob(os.path.join(JSON_DATA_DIR, "*.json"))
     if not files:
         raise ValueError(f"No JSON files found in {JSON_DATA_DIR}")
@@ -31,45 +28,59 @@ def get_random_rules(num_rules):
     for file_path in selected_files:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            # Handle list or dict
             entries = data if isinstance(data, list) else [data]
             for entry in entries:
-                # Only test "Terms" not "Policies" for now (easier to test)
                 if entry.get("type") == "term":
                     rules.append(entry)
                     
-    # Shuffle and pick N rules from the loaded set
     random.shuffle(rules)
     return rules[:num_rules]
 
 def generate_test_cases(client, rule):
     print(f"Generating tests for rule: {rule.get('term')}...")
     
-    # Prompt designed for your specific RAG structure
+    # --- IMPROVED PROMPT ---
+    # We use "Few-Shot" examples to teach the LLM exactly what we want.
     prompt = f"""
-    You are a QA Engineer generating test cases for a Style Guide Auditor.
+    You are a QA Data Generator. Your job is to create TRICKY but FAIR test cases to evaluate a Style Guide Checker.
+
+    ### INPUT DATA
+    TERM: "{rule.get('term')}"
+    DEFINITION: "{rule.get('definition')}"
+    NEGATIVE CONSTRAINTS (The Errors): {rule.get('negative_constraints', [])}
+    CONTEXT TAG: "{rule.get('context_tag', 'General')}"
+
+    ### TASK
+    Generate exactly 3 test cases in JSON format:
+
+    1. **TYPE: VIOLATION**
+       - The sentence MUST contain one of the 'Negative Constraints'.
+       - It should look like a natural sentence a journalist might write.
+       - expected_violation: true
+
+    2. **TYPE: COMPLIANCE**
+       - The sentence MUST use the **TERM** correctly as per the definition.
+       - It must NOT contain the negative constraint.
+       - expected_violation: false
+
+    3. **TYPE: AMBIGUOUS / IRRELEVANT**
+       - The sentence should contain the word, but in a context where the rule DOES NOT apply.
+       - OR use a generic word that looks similar but isn't the specific term.
+       - Example: If the rule is for "Apple" (the company), an ambiguous sentence is "I ate an apple."
+       - expected_violation: false
+
+    ### EXAMPLES (For Reference)
     
-    RULE TO TEST:
-    Term: "{rule.get('term')}"
-    Definition: "{rule.get('definition')}"
-    Negative Constraints (What to avoid): {rule.get('negative_constraints', [])}
-    
-    TASK:
-    Generate 3 distinct test sentences:
-    1. [VIOLATION]: A sentence that explicitly violates the rule (uses a negative constraint).
-    2. [COMPLIANCE]: A sentence that uses the term correctly.
-    3. [AMBIGUOUS]: A sentence using a similar word or context that should NOT trigger the rule (to test false positives).
-    
-    OUTPUT JSON FORMAT:
+    Input Rule: "Livestream" (one word). Negative: "live stream".
+    Output:
     [
-      {{
-        "text": "The sentence text",
-        "expected_violation": true/false,
-        "test_type": "violation" | "compliance" | "ambiguous",
-        "expected_correction": "The corrected text (if violation)"
-      }},
-      ...
+      {{ "text": "I will watch the live stream tomorrow.", "expected_violation": true, "test_type": "violation", "reason": "Uses two words 'live stream'" }},
+      {{ "text": "The livestream was interrupted.", "expected_violation": false, "test_type": "compliance", "reason": "Uses correct one-word spelling" }},
+      {{ "text": "Fish swim in the live stream near the woods.", "expected_violation": false, "test_type": "ambiguous", "reason": "Refers to a body of water, not video" }}
     ]
+
+    ### YOUR OUTPUT
+    Generate the JSON for the INPUT DATA provided above.
     """
     
     try:
@@ -78,11 +89,25 @@ def generate_test_cases(client, rule):
             contents=prompt,
             config={
                 "response_mime_type": "application/json",
-                "temperature": 0.7,
-                "max_output_tokens": 8192,
-              }
+                "temperature": 0.6, # Lower temp = less creative, more rule-following
+                "max_output_tokens": 2048,
+            }
         )
-        return json.loads(response.text)
+        
+        tests = json.loads(response.text)
+        
+        # --- SANITY CHECK ---
+        # Ensure the LLM didn't hallucinate the booleans
+        clean_tests = []
+        for t in tests:
+            if t['test_type'] == 'violation':
+                t['expected_violation'] = True
+            else:
+                t['expected_violation'] = False
+            clean_tests.append(t)
+            
+        return clean_tests
+
     except Exception as e:
         print(f"Error generating: {e}")
         return []
@@ -99,10 +124,13 @@ def main():
     
     for rule in rules:
         tests = generate_test_cases(client, rule)
-        # Enrich with rule metadata for the evaluator
+        
         for t in tests:
+            # Enrich with metadata for the evaluator
             t["target_rule"] = rule.get("term")
             t["target_url"] = rule.get("url")
+            t["rule_context"] = rule.get("context_tag")
+            
         all_tests.extend(tests)
 
     # Save
@@ -110,7 +138,7 @@ def main():
     with open(OUTPUT_FILE, "w") as f:
         json.dump(all_tests, f, indent=2)
     
-    print(f"Generated {len(all_tests)} test cases.")
+    print(f"Generated {len(all_tests)} test cases. Saved to {OUTPUT_FILE}")
 
 if __name__ == "__main__":
     main()
