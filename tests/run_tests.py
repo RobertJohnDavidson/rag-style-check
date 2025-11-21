@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import random
-from src.audit import StyleAuditor 
+from src.audit_common_inclusion import StyleAuditor 
 from src.agent_audit import AgentStyleAuditor
 from tests.generate_common_tests import generate_common_tests_file
 from dotenv import load_dotenv

@@ -162,12 +162,16 @@ class StyleAuditor:
 
         USER SENTENCE: "{sentence}"
 
-        --- SOURCE:  SPECIFIC RETRIEVED GUIDELINES ---
+        --- SOURCE A: COMMON HIGH-PRIORITY RULES ---
+        {COMMON_RULES}
+
+        --- SOURCE B: SPECIFIC RETRIEVED GUIDELINES ---
         {context_block if context_block else "No specific guidelines found in database."}
 
         TASK:
         Return a JSON object.
-        Check against Source .
+        1. Check against Source A first.
+        2. If no violation found, check against Source B.
         If correct or rules don't apply: "status": "PASS".
         If violation: "status": "FAIL".
 
