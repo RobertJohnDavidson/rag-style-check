@@ -12,6 +12,9 @@ from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
 
+# Import Common Rules
+from src.prompts import COMMON_RULES
+
 # --- IMPORT CUSTOM RERANKER ---
 try:
     from src.vertex_rerank import VertexAIRerank
@@ -117,12 +120,8 @@ class StyleAuditor:
         # 1. Retrieve (Vector Search)
         nodes = self.retriever.retrieve(sentence)
         
-        if not nodes: 
-            return None
-
         # 2. Rerank (Semantic Ranking)
-        # Ensure 'nodes' is updated safely
-        if self.reranker:
+        if nodes and self.reranker:
             try:
                 query_bundle = QueryBundle(query_str=sentence)
                 nodes = self.reranker.postprocess_nodes(
@@ -132,44 +131,47 @@ class StyleAuditor:
             except Exception as e:
                 print(f"Rerank failed (fallback to vector): {e}")
                 nodes = nodes[:FINAL_TOP_K]
-        else:
+        elif nodes:
             # Fallback if no reranker loaded
             nodes = nodes[:FINAL_TOP_K]
 
         # 3. Filter
-        # Define valid_nodes HERE, outside any if/else blocks
-        valid_nodes = [n for n in nodes if n.score > RERANK_SCORE_THRESHOLD]
+        valid_nodes = [n for n in nodes if n.score > RERANK_SCORE_THRESHOLD] if nodes else []
         
-        if not valid_nodes: 
-            return None
-
-        # 4. Context
+        # 4. Context Construction
         context_block = ""
         citations = {}
         rule_names = {} 
         
+        # Add Retrieved Rules
         for i, node in enumerate(valid_nodes):
             term = node.metadata['term']
             rule_text = node.metadata.get('display_text', node.get_content())
             url = node.metadata.get('url', 'No URL')
             
-            rule_id = f"RULE #{i+1}"
+            rule_id = f"RETRIEVED_RULE_#{i+1}"
             context_block += f"{rule_id} ({term}):\n{rule_text}\n\n"
             citations[rule_id] = url
             rule_names[rule_id] = term
 
         # 5. LLM Judge
+        # We now include COMMON_RULES in the prompt regardless of retrieval success
         prompt = f"""
         You are an expert Copy Editor for CBC News.
         Check the User Sentence against the Rules.
 
         USER SENTENCE: "{sentence}"
 
-        RULES:
-        {context_block}
+        --- SOURCE A: COMMON HIGH-PRIORITY RULES ---
+        {COMMON_RULES}
+
+        --- SOURCE B: SPECIFIC RETRIEVED GUIDELINES ---
+        {context_block if context_block else "No specific guidelines found in database."}
 
         TASK:
         Return a JSON object.
+        1. Check against Source A first.
+        2. If no violation found, check against Source B.
         If correct or rules don't apply: "status": "PASS".
         If violation: "status": "FAIL".
 
@@ -178,7 +180,7 @@ class StyleAuditor:
             "status": "PASS" | "FAIL",
             "violation_explanation": "Why it is wrong",
             "correction": "Corrected sentence",
-            "cited_rule_id": "RULE #1"
+            "cited_rule_id": "Name of the rule from Source A (e.g. 'CAPITALIZATION') or ID from Source B (e.g. 'RETRIEVED_RULE_#1')"
         }}
         
         Return ONLY raw JSON. No markdown blocks.
@@ -192,13 +194,18 @@ class StyleAuditor:
             result = json.loads(response_text)
 
             if result.get("status") == "FAIL":
-                rule_id = result.get("cited_rule_id", "RULE #1")
+                rule_id = result.get("cited_rule_id", "Unknown")
+                
+                # Determine source URL
+                source_url = citations.get(rule_id, "Common Style Rule (No specific URL)")
+                rule_name = rule_names.get(rule_id, rule_id)
+
                 return {
                     "sentence": sentence,
                     "violation": result.get("violation_explanation"),
                     "correction": result.get("correction"),
-                    "source_url": citations.get(rule_id, ""),
-                    "rule_name": rule_names.get(rule_id, "Unknown Rule"),
+                    "source_url": source_url,
+                    "rule_name": rule_name,
                     "rule_context": rule_id
                 }
             return None 

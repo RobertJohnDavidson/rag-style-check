@@ -1,9 +1,12 @@
 import json
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import random
 from src.audit import StyleAuditor 
 from src.agent_audit import AgentStyleAuditor
+from tests.generate_common_tests import generate_common_tests_file
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -44,7 +47,7 @@ def save_results(stats, detailed_logs, report_text):
 
     print(f"\n💾 Results saved to:\n   - {json_filename}")
 
-def run_evaluation(limit=None, randomize=False, use_agent=False):
+def run_evaluation(limit=None, randomize=False, use_agent=False, test_file=None):
     if use_agent:
         print(f"🚀 Initializing Agent Auditor ({MODEL})...")
         auditor = AgentStyleAuditor()
@@ -52,11 +55,12 @@ def run_evaluation(limit=None, randomize=False, use_agent=False):
         print(f"🚀 Initializing RAG Auditor ({MODEL})...")
         auditor = StyleAuditor()
     
-    if not os.path.exists(TEST_FILE):
-        print(f"❌ Test file not found: {TEST_FILE}")
+    target_file = test_file if test_file else TEST_FILE
+    if not os.path.exists(target_file):
+        print(f"❌ Test file not found: {target_file}")
         return
 
-    with open(TEST_FILE, 'r') as f:
+    with open(target_file, 'r') as f:
         test_cases = json.load(f)
     
     if randomize:
@@ -209,6 +213,15 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, help="Limit tests")
     parser.add_argument("--random", action="store_true", help="Randomize")
     parser.add_argument("--agent", action="store_true", help="Use Agent Auditor instead of RAG")
+    parser.add_argument("--common", action="store_true", help="Run tests from common rules (generated_tests_common.json)")
+    parser.add_argument("--generate", action="store_true", help="Generate new tests from common rules")
     args = parser.parse_args()
     
-    run_evaluation(limit=args.limit, randomize=args.random, use_agent=args.agent)
+    if args.generate:
+        generate_common_tests_file()
+    
+    test_file_path = TEST_FILE
+    if args.common:
+        test_file_path = "tests/generated_tests_common.json"
+    
+    run_evaluation(limit=args.limit, randomize=args.random, use_agent=args.agent, test_file=test_file_path)
