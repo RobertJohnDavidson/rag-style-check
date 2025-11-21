@@ -2,7 +2,8 @@ import json
 import os
 import argparse
 import random
-from src.audit import StyleAuditor # Ensure this import matches your folder structure
+from src.audit import StyleAuditor 
+from src.agent_audit import AgentStyleAuditor
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -43,9 +44,13 @@ def save_results(stats, detailed_logs, report_text):
 
     print(f"\n💾 Results saved to:\n   - {json_filename}")
 
-def run_evaluation(limit=None, randomize=False):
-    print(f"🚀 Initializing Auditor ({MODEL})...")
-    auditor = StyleAuditor()
+def run_evaluation(limit=None, randomize=False, use_agent=False):
+    if use_agent:
+        print(f"🚀 Initializing Agent Auditor ({MODEL})...")
+        auditor = AgentStyleAuditor()
+    else:
+        print(f"🚀 Initializing RAG Auditor ({MODEL})...")
+        auditor = StyleAuditor()
     
     if not os.path.exists(TEST_FILE):
         print(f"❌ Test file not found: {TEST_FILE}")
@@ -203,6 +208,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--limit", type=int, help="Limit tests")
     parser.add_argument("--random", action="store_true", help="Randomize")
+    parser.add_argument("--agent", action="store_true", help="Use Agent Auditor instead of RAG")
     args = parser.parse_args()
     
-    run_evaluation(limit=args.limit, randomize=args.random)
+    run_evaluation(limit=args.limit, randomize=args.random, use_agent=args.agent)
