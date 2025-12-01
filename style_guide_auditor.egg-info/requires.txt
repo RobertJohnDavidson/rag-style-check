@@ -1,6 +1,11 @@
 llama-index-core
 llama-index-vector-stores-chroma
-llama-index-embeddings-google
+llama-index-embeddings-google-genai
+llama-index-llms-google-genai
 chromadb
 spacy
 python-dotenv
+google-cloud-storage
+google-cloud-discoveryengine
+beautifulsoup4
+requests

@@ -2,3 +2,5 @@
 /db
 /tests/results_history
 .env
+*/__pycache__/
+*.pyc

@@ -1,19 +1,27 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "style_guide_auditor"
 version = "0.1.0"
 description = "RAG based style guide checker"
+requires-python = ">=3.10"
 dependencies = [
     "llama-index-core",
     "llama-index-vector-stores-chroma",
-    "llama-index-embeddings-google",
+    "llama-index-embeddings-google-genai",
+    "llama-index-llms-google-genai",
     "chromadb",
     "spacy",
     "python-dotenv",
-    "google-cloud-storage"
+    "google-cloud-storage",
+    "google-cloud-discoveryengine",
+    "beautifulsoup4",
+    "requests",
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic"
 ]
 
 [tool.setuptools.packages.find]

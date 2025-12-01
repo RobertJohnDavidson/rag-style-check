@@ -6,3 +6,7 @@ spacy
 python-dotenv
 llama-index-llms-google-genai
 google-cloud-storage
+google-cloud-discoveryengine
+fastapi
+uvicorn[standard]
+pydantic

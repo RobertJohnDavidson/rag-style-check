@@ -1,0 +1,150 @@
+[
+  {
+    "text": "Guilbeault quit Cabinet over Thursday’s memorandum of understanding with the western provinces, which jointly agrees on a path forward for a new tarsands pipeline to the B.C. coast. The Alberta Government has supported this, some say, challenging CBC journalistic standards and practices.",
+    "expected_violations": [
+      {
+        "rule": "Federal cabinet",
+        "text": "Cabinet",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
+      },
+      {
+        "rule": "the western provinces",
+        "text": "the western provinces",
+        "source_url": "https://language-guide.cbcrc.ca/home/w/western_canada"
+      },
+      {
+        "rule": "oilsands versus tarsands",
+        "text": "tarsands",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links/craft-notes"
+      },
+      {
+        "rule": "CBC Journalistic Standards and Practices",
+        "text": "CBC journalistic standards and practices",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
+      },
+      {
+        "rule": "government",
+        "text": "Alberta Government",
+        "source_url": "https://language-guide.cbcrc.ca/home/g"
+      }
+    ],
+    "id": "complex_real_1"
+  },
+  {
+    "text": "All of those responsibilities at Industry Canada had previously been held by former minister Steven Guilbeault who resigned from cabinet last week.",
+    "expected_violations": [
+      {
+        "rule": "other ministers",
+        "text": "minister Steven Guilbeault",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+      },
+      {
+        "rule": "Industry Canada",
+        "text": "Industry Canada",
+        "source_url": "https://language-guide.cbcrc.ca/home/i"
+      }
+    ],
+    "id": "complex_real_2"
+  },
+  {
+    "text": "The Montreal MP was not given a cabinet post when Carney first took office.",
+    "expected_violations": [],
+    "id": "complex_real_3"
+  },
+  {
+    "text": "“It feels great, I’m a guy that likes to be busy and so I was a little restless. But it’s nice to get the opportunity to keep on doing some amazing work,” he said after the investiture ceremony.",
+    "expected_violations": [
+      {
+        "rule": "Installation Ceremony",
+        "text": "investiture ceremony",
+        "source_url": "https://language-guide.cbcrc.ca/home/g/governor-general"
+      }
+    ],
+    "id": "complex_real_4"
+  },
+  {
+    "text": "prime minister Mark Carney shook up his front bench Monday afternoon, bringing a Trudeau-era minister into his cabinet while adding responsibilities to two other Ministers.",
+    "expected_violations": [
+      {
+        "rule": "Mark Carney",
+        "text": "Mark Carney",
+        "source_url": "https://language-guide.cbcrc.ca/home/g/g8-g20-2010-summits"
+      },
+      {
+        "rule": "Prime Minister",
+        "text": "prime minister",
+        "source_url": "https://language-guide.cbcrc.ca/home/p"
+      },
+      {
+        "rule": "other ministers",
+        "text": "Ministers",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+      }
+    ],
+    "id": "complex_real_5"
+  },
+  {
+    "text": "Chrystia Freeland, former transport and internal trade Minister, left her role in September — and signalled that she has plans to leave federal politics entirely.",
+    "expected_violations": [
+      {
+        "rule": "other ministers",
+        "text": "Minister",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+      }
+    ],
+    "id": "complex_real_6"
+  },
+  {
+    "text": "Freeland held a number of cabinet positions under Trudeau, including finance. Her resignation from that role last year ultimately led to the former prime minister stepping down.",
+    "expected_violations": [
+      {
+        "rule": "former",
+        "text": "former prime minister",
+        "source_url": "https://language-guide.cbcrc.ca/home/f"
+      }
+    ],
+    "id": "complex_real_7"
+  },
+  {
+    "text": "Lightbound says he’s 'honoured' to become new Quebec lieutenant",
+    "expected_violations": [],
+    "id": "complex_real_8"
+  },
+  {
+    "text": "Carney handed the internal trade file to Canada-U.S. trade minister Dominic LeBlanc and passed the transport file to House Leader Steven Mackinnon.",
+    "expected_violations": [
+      {
+        "rule": "Mark Carney",
+        "text": "Carney",
+        "source_url": "https://language-guide.cbcrc.ca/home/g/g8-g20-2010-summits"
+      },
+      {
+        "rule": "Prime Minister",
+        "text": "trade minister",
+        "source_url": "https://language-guide.cbcrc.ca/home/p"
+      }
+    ],
+    "id": "complex_real_9"
+  },
+  {
+    "text": "Similarly, Dabrusin had served as a Parliamentary Secretary under Trudeau, but was promoted to federal cabinet under Carney, the Quebec Lieutenant, in the spring.",
+    "expected_violations": [
+      {
+        "rule": "Secondary Government Positions",
+        "text": "Parliamentary Secretary",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+      },
+      {
+        "rule": "Federal cabinet",
+        "text": "federal cabinet",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
+      },
+      {
+        "rule": "Quebec lieutenant",
+        "text": "Quebec Lieutenant",
+        "source_url": "https://language-guide.cbcrc.ca/home/q"
+      }
+    ],
+    "id": "complex_real_10"
+  }
+]

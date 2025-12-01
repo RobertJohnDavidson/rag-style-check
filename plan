@@ -1,0 +1,45 @@
+## Plan: Expand Auditor & Add Web Interface
+
+Refactor the auditor to handle paragraphs with multiple violations, update the test suite to support complex multi-error scenarios, and build a Svelte 5 web interface for interactive testing.
+
+### Steps
+1. **Refactor Auditor Core (`src/audit.py`)**
+   - **Hybrid Retrieval Strategy**: Split the input paragraph into sentences to perform granular RAG retrieval for each sentence.
+   - **Context Aggregation**: Collect all unique rules retrieved from the sentence-level lookups.
+   - **Paragraph Auditing**: Pass the *full original paragraph* and the *aggregated set of rules* to the LLM for a single audit pass.
+   - Modify the LLM prompt to return a JSON list of violations, each containing `text` (subsection), `rule_name`, and `reason`.
+   - Ensure the return signature matches the new `rule_violations` schema.
+
+2. **Create Complex Test Generator (`tests/generate_complex_tests.py`)**
+   - **Source Material Options (Toggleable)**:
+     - *Synthetic*: Generate paragraphs from scratch using the LLM (default).
+     - *Real World*: Implement a scraper (using `requests`/`BeautifulSoup`) to fetch real article text from `cbc.ca` to use as the base "clean" text.
+   - **Error Injection**: Create a prompt that takes a clean paragraph (synthetic or real) and a set of random rules, then asks the LLM to *rewrite* the paragraph to violate those specific rules while keeping the rest of the text natural.
+   - **Output**: Generate the requested JSON format: `{"text": "...", "rule_violations": [...]}`.
+   - Support generating test cases with 0-5 violations per paragraph.
+
+3. **Update Test Runner (`tests/run_tests.py`)**
+   - Modify the validation logic to compare a *list* of expected violations against a *list* of actual findings.
+   - Implement "fuzzy matching" for the `text` field (subsection) to account for slight boundary differences.
+   - **Detailed Reporting**: Calculate and report a full confusion matrix:
+     - **True Positive**: Correctly identified a violation.
+     - **True Negative**: Correctly ignored text with no errors (crucial for the 0-violation cases).
+     - **False Positive**: Flagged an error where none existed.
+     - **False Negative**: Missed an expected violation.
+   - Update metrics to track these stats at the *violation* level.
+
+4. **Build Backend API (`src/server.py`)**
+   - Create a lightweight FastAPI server.
+   - Expose endpoints: `POST /audit` (run auditor on text), `GET /models` (list available models), `POST /tests` (ingest new test cases from the creator UI), and `POST /tests/run` (execute suites).
+   - Gate creator uploads vs. runner actions via API keys or role flags so non-technical users only hit the creation endpoint.
+
+5. **Develop Frontend (`frontend/`)**
+   - Initialize a **SvelteKit** project using **Svelte 5** syntax (Runes) and Tailwind CSS.
+   - **Tool Usage**: Actively use the `mcp_my-mcp-server` to fetch Svelte 5 documentation and validate components.
+   - **Chat Interface**: Create a text area for inputting paragraphs and a "Send" button to run the auditor, displaying violations as highlighted text or a list.
+   - **Test Creator Studio**: Provide a dedicated route where users paste/import text, highlight spans inline, assign rules from a dropdown, and export JSON. Hide runner controls entirely on this route.
+   - **Test Runner View**: Separate, access-controlled dashboard for engineers to load suites and inspect confusion-matrix reports; not visible to creator-only users.
+
+### Further Considerations
+1. **Google Sheet Ingestion**: Do you have a specific Google Sheet ID/structure ready? I can add a script to fetch and convert it to the new JSON format.
+2. **Model Selection**: Does `src/audit.py` currently support dynamic model switching, or should we refactor it to accept a `model_name` argument?
