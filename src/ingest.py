@@ -2,6 +2,7 @@ import os
 import json
 import glob
 import chromadb
+from google.cloud import storage
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, StorageContext, Settings
 from llama_index.core.schema import TextNode
@@ -88,7 +89,49 @@ def create_node_from_entry(entry):
 
     return node
 
+def load_nodes_from_gcs(gcs_path):
+    """
+    Loads JSON files from a Google Cloud Storage bucket.
+    Expected format: gs://bucket-name/path/to/files
+    """
+    nodes = []
+    
+    # Parse bucket and prefix
+    path_parts = gcs_path[5:].split("/", 1)
+    bucket_name = path_parts[0]
+    prefix = path_parts[1] if len(path_parts) > 1 else ""
+    
+    print(f"☁️  Connecting to GCS Bucket: {bucket_name}, Prefix: {prefix}")
+    
+    try:
+        storage_client = storage.Client()
+        bucket = storage_client.bucket(bucket_name)
+        blobs = bucket.list_blobs(prefix=prefix)
+        
+        count = 0
+        for blob in blobs:
+            if blob.name.endswith(".json"):
+                try:
+                    content = blob.download_as_text()
+                    data = json.loads(content)
+                    entries = data if isinstance(data, list) else [data]
+                    for entry in entries:
+                        nodes.append(create_node_from_entry(entry))
+                    count += 1
+                except Exception as e:
+                    print(f"❌ Error processing {blob.name}: {e}")
+        
+        print(f"📂 Found and processed {count} JSON files from GCS.")
+        
+    except Exception as e:
+        print(f"❌ Error accessing GCS: {e}")
+        
+    return nodes
+
 def load_nodes(directory):
+    if directory.startswith("gs://"):
+        return load_nodes_from_gcs(directory)
+
     nodes = []
     files = glob.glob(os.path.join(directory, "*.json"))
     print(f"📂 Found {len(files)} JSON files. Parsing...")
@@ -108,7 +151,11 @@ def load_nodes(directory):
 
 def main():
     # 1. Prepare Data
-    if not os.path.exists(JSON_DATA_DIR):
+    if not JSON_DATA_DIR:
+        print("❌ JSON_DATA_DIR environment variable is not set.")
+        return
+
+    if not JSON_DATA_DIR.startswith("gs://") and not os.path.exists(JSON_DATA_DIR):
         print(f"❌ Directory not found: {JSON_DATA_DIR}")
         return
     

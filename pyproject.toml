@@ -12,7 +12,8 @@ dependencies = [
     "llama-index-embeddings-google",
     "chromadb",
     "spacy",
-    "python-dotenv"
+    "python-dotenv",
+    "google-cloud-storage"
 ]
 
 [tool.setuptools.packages.find]
