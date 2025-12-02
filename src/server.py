@@ -9,14 +9,21 @@ Provides REST API endpoints for:
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 import json
 import os
 from datetime import datetime
 from pathlib import Path
 
-from src.audit import StyleAuditor
+from src.core.auditor import StyleAuditor
+from src.api.schemas import (
+    AuditRequest,
+    AuditResponse,
+    Violation,
+    TestCase,
+    TestSuiteRequest,
+    ModelInfo
+)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -44,44 +51,6 @@ def get_auditor() -> StyleAuditor:
     if auditor is None:
         auditor = StyleAuditor()
     return auditor
-
-
-# Request/Response Models
-class AuditRequest(BaseModel):
-    text: str = Field(..., description="Text to audit for style violations")
-    model: Optional[str] = Field(None, description="Optional model override")
-
-
-class Violation(BaseModel):
-    text: str = Field(..., description="The text snippet that violates the rule")
-    rule: str = Field(..., description="The rule name or guideline violated")
-    reason: str = Field(..., description="Explanation of why this is a violation")
-    source_url: Optional[str] = Field(None, description="URL to the style guide section")
-
-
-class AuditResponse(BaseModel):
-    violations: List[Violation]
-    metadata: Dict[str, Any] = Field(
-        default_factory=dict,
-        description="Additional metadata (processing time, model used, etc.)"
-    )
-
-
-class TestCase(BaseModel):
-    id: str
-    text: str
-    expected_violations: List[Dict[str, str]]
-
-
-class TestSuiteRequest(BaseModel):
-    test_cases: List[TestCase]
-    suite_name: Optional[str] = Field(None, description="Name for the test suite")
-
-
-class ModelInfo(BaseModel):
-    name: str
-    description: str
-    available: bool
 
 
 # API Key validation (simple implementation)
