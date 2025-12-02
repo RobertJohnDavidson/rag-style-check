@@ -5,7 +5,7 @@ import random
 from datetime import datetime
 from difflib import SequenceMatcher
 
-from src.audit import StyleAuditor
+from src.core.auditor import StyleAuditor
 from dotenv import load_dotenv
 
 load_dotenv()

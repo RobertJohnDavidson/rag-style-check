@@ -13,11 +13,11 @@ from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
 
 # Import Common Rules
-from src.prompts import COMMON_RULES
+from src.legacy.prompts import COMMON_RULES
 
 # --- IMPORT CUSTOM RERANKER ---
 try:
-    from src.vertex_rerank import VertexAIRerank
+    from src.core.reranker import VertexAIRerank
 except ImportError:
     print("⚠️ VertexAIRerank class not found. Re-ranking will be skipped.")
     VertexAIRerank = None

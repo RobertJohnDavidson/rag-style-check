@@ -16,7 +16,7 @@ from llama_index.core.retrievers import VectorIndexRetriever
 
 # Import reranker if available
 try:
-    from src.vertex_rerank import VertexAIRerank
+    from src.core.reranker import VertexAIRerank
 except ImportError:
     VertexAIRerank = None
 

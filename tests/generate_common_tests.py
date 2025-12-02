@@ -5,7 +5,7 @@ import time
 from dotenv import load_dotenv
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core import Settings
-from src.prompts import COMMON_RULES
+from src.legacy.prompts import COMMON_RULES
 
 # Load environment variables
 load_dotenv()
