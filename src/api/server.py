@@ -9,7 +9,7 @@ Provides REST API endpoints for:
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import json
 import os
 from datetime import datetime
