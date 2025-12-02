@@ -90,17 +90,17 @@ async def audit_text(
         start_time = datetime.now()
         
         # Run the auditor
-        violations = auditor.check_text(request.text)
+        violations = await auditor.check_text_async(request.text)
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
         
-        # Format response
+        # Format response - map auditor fields to API schema
         formatted_violations = [
             Violation(
                 text=v.get("text", ""),
-                rule=v.get("rule", "Unknown"),
-                reason=v.get("reason", ""),
+                rule=v.get("rule_name", "Unknown"),
+                reason=v.get("violation", ""),
                 source_url=v.get("source_url", None)
             )
             for v in violations

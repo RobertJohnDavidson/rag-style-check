@@ -1,5 +1,6 @@
 import os
 import json
+import asyncio
 import chromadb
 from dotenv import load_dotenv
 from spacy.lang.en import English 
@@ -33,10 +34,10 @@ PROJECT_NAME = os.getenv("PROJECT_NAME")
 REGION = os.getenv("REGION", "us-central1")
 
 # Tuning
-INITIAL_RETRIEVAL_COUNT = 50  # Increased from 20 for better initial recall
-FINAL_TOP_K = 15              # Increased from 10 to give more context
+INITIAL_RETRIEVAL_COUNT = 75  # Increased to cast wider net
+FINAL_TOP_K = 25              # Increased to give more context per sentence
 RERAN_SCORE_THRESHOLD = 0.10  # Lowered from 0.15 to be even less strict
-AGGREGATED_RULE_LIMIT = 25    # Increased from 20 for more comprehensive coverage
+AGGREGATED_RULE_LIMIT = 40    # Increased to allow more comprehensive coverage
 MIN_SENTENCE_LENGTH = 5
 MAX_AGENT_ITERATIONS = 3  # Max thinking cycles for agent refinement
 INCLUDE_COMMON_RULES = False
@@ -92,6 +93,12 @@ class StyleAuditor:
             )
         else:
             self.reranker = None
+
+    async def check_text_async(self, text):
+        """Async wrapper for check_text to work with FastAPI."""
+        # Run the sync check_text in a thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, self.check_text, text)
 
     def check_text(self, text):
         paragraphs = self._split_paragraphs(text)
@@ -179,7 +186,7 @@ class StyleAuditor:
             # If agent is confident, stop early
             # BUT: Don't trust confidence if we have very few rules
             if is_confident and not needs_more_context:
-                if len(contexts) < 10:
+                if len(contexts) < 15:  # Increased from 10 - require more rules for confidence
                     print(f"⚠️  Agent claims confidence but only {len(contexts)} rules available. Requesting more context.")
                     is_confident = False
                     needs_more_context = True
@@ -273,7 +280,7 @@ class StyleAuditor:
     def _collect_rule_contexts(self, sentences):
         aggregated = {}
 
-        # Retrieve based on full sentences
+        # Retrieve based on full sentences - process ALL sentences, don't break early
         for sentence in sentences:
             nodes = self._retrieve_nodes(sentence)
             for node in nodes:
@@ -289,9 +296,7 @@ class StyleAuditor:
                         "score": score,
                         "source_type": "retrieved"
                     }
-
-            if len(aggregated) >= AGGREGATED_RULE_LIMIT:
-                break
+            # Continue processing all sentences to get comprehensive coverage
         
         # If we didn't get enough rules, try keyword-based retrieval
         if len(aggregated) < 10:
@@ -389,34 +394,46 @@ class StyleAuditor:
         {reflection_block}
 
         CRITICAL INSTRUCTIONS:
-        1. Apply rules based on the guideline text, not just the rule name
-           - Read the full guideline carefully to understand when the rule applies
-           - Look for examples and context in the guideline text
-           - If a rule says "West Coast" should be capitalized, apply it ONLY to "West Coast", not "B.C. coast" or similar terms
+        1. Apply rules LITERALLY based on the guideline text, not rule interpretations
+           - Read the full guideline text carefully
+           - Only flag violations that explicitly match the guideline
+           - If the text already matches the guideline requirement, DO NOT flag it
+           
+           EXAMPLE: If rule says "Use 'Alberta Government' (capitalized)" and text says "Alberta Government", this is CORRECT - do NOT flag it
+           EXAMPLE: If rule says "Use 'oilsands'" and text says "tarsands", this IS a violation
+           ABBREVIATION RULES: Only flag abbreviations if the guideline says they are WRONG or FORBIDDEN
+           - If rule says "can be abbreviated as X", just seeing the full form is NOT a violation
+           - Only flag if abbreviation is required but not used, OR if wrong abbreviation is used
         
-        2. Do NOT over-generalize or extrapolate beyond what the rule explicitly states
+        2. Do NOT over-generalize or extrapolate
            - Rules about specific terms apply only to those exact terms
-           - Do NOT infer additional cases unless the guideline explicitly mentions them
+           - Do NOT invent additional cases
+           - Never assume an abbreviation rule applies to every instance of a word
         
-        3. Identify violations based ONLY on the retrieved rules above
-           - Do NOT invent or reference rules that aren't in the retrieved list
+        3. Verify each violation:
+           - Is the text in the paragraph exactly what the guideline says to change?
+           - Would fixing it actually improve compliance with the rule?
+           - If the text is already correct per the guideline, skip it
         
-        4. Avoid reporting the same violation twice (check for duplicates)
+        4. Avoid reporting duplicates (same violation at different locations)
         
-        5. Set "confident": true if your analysis is complete and accurate
-           - Set "confident": false and "needs_more_context": true if you need additional rules
+        5. Set "confident": true only if:
+           - You have reviewed all retrieved rules thoroughly
+           - You are certain about each violation
+           - You would not benefit from additional context
+           Set "confident": false if unsure or if retrieved rules seem incomplete
         
-        6. If needs_more_context=true, provide specific queries in "additional_queries"
-           - Make queries SPECIFIC: use exact terms from the text (e.g., "quotation marks", "prime minister capitalization")
-           - Do NOT prefix with "CBC style guide for" - just the specific topic
-           - Examples: "em dash usage", "premier title capitalization", "acronym punctuation"
+        6. If needs_more_context=true, provide specific queries
+           - Use exact terms from the text (e.g., "quotation marks", "prime minister")
+           - Make queries SPECIFIC and SHORT
+           - Examples: "em dash usage", "premier capitalization", "acronym punctuation"
 
         JSON SCHEMA:
         {{
             "violations": [
                 {{
                     "text": "Exact substring from the user paragraph that violates the rule",
-                    "explanation": "Why the snippet breaks the rule",
+                    "explanation": "Why the snippet breaks the rule (reference the guideline)",
                     "suggested_fix": "How to fix it",
                     "rule_id": "RETRIEVED_RULE_#X (use the ID from the list above)",
                     "rule_name": "Human-readable rule title",

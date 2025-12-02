@@ -1,148 +1,210 @@
 [
   {
-    "text": "Guilbeault quit Cabinet over Thursday’s memorandum of understanding with the western provinces, which jointly agrees on a path forward for a new tarsands pipeline to the B.C. coast. The Alberta Government has supported this, some say, challenging CBC journalistic standards and practices.",
+    "text": "The series was also made into an animated CBC TV show, inspired a postage stamp, and both author Paulette Bourgeois and illustrator Brenda Clark are Members of the order of Canada.",
     "expected_violations": [
       {
-        "rule": "Federal cabinet",
-        "text": "Cabinet",
-        "source_url": "https://language-guide.cbcrc.ca/handy-links"
+        "rule": "member of the Order of Canada",
+        "text": "Members",
+        "source_url": "https://language-guide.cbcrc.ca/home/o/order-of-canada"
       },
       {
-        "rule": "the western provinces",
-        "text": "the western provinces",
-        "source_url": "https://language-guide.cbcrc.ca/home/w/western_canada"
+        "rule": "Order of Canada",
+        "text": "order of Canada",
+        "source_url": "https://language-guide.cbcrc.ca/home/o/order-of-canada"
       },
       {
-        "rule": "oilsands versus tarsands",
-        "text": "tarsands",
-        "source_url": "https://language-guide.cbcrc.ca/handy-links/craft-notes"
-      },
-      {
-        "rule": "CBC Journalistic Standards and Practices",
-        "text": "CBC journalistic standards and practices",
-        "source_url": "https://language-guide.cbcrc.ca/handy-links"
-      },
-      {
-        "rule": "government",
-        "text": "Alberta Government",
-        "source_url": "https://language-guide.cbcrc.ca/home/g"
+        "rule": "CBC-TV or CBC Television",
+        "text": "CBC TV",
+        "source_url": "https://language-guide.cbcrc.ca/home/c/cbc"
       }
     ],
     "id": "complex_real_1"
   },
   {
-    "text": "All of those responsibilities at Industry Canada had previously been held by former minister Steven Guilbeault who resigned from cabinet last week.",
+    "text": "white house says admiral ordered 2nd strike on alleged drug boat",
     "expected_violations": [
       {
-        "rule": "other ministers",
-        "text": "minister Steven Guilbeault",
-        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
-      },
-      {
-        "rule": "Industry Canada",
-        "text": "Industry Canada",
-        "source_url": "https://language-guide.cbcrc.ca/home/i"
+        "rule": "well-known landmarks",
+        "text": "white house",
+        "source_url": "https://language-guide.cbcrc.ca/home/c/capitalization"
       }
     ],
     "id": "complex_real_2"
   },
   {
-    "text": "The Montreal MP was not given a cabinet post when Carney first took office.",
-    "expected_violations": [],
+    "text": "The U.S. administration alleges the airstrikes in the Caribbean are aimed at militant groups, some of which it claims are controlled by Venezuelan President Nicolás Maduro.",
+    "expected_violations": [
+      {
+        "rule": "Accurate and Neutral Language",
+        "text": "alleges",
+        "source_url": "https://language-guide.cbcrc.ca/home/a/accidents"
+      },
+      {
+        "rule": "airstrike",
+        "text": "airstrikes",
+        "source_url": "https://language-guide.cbcrc.ca/home/a"
+      },
+      {
+        "rule": "Misusing/Mischaracterizing Terms",
+        "text": "militant groups",
+        "source_url": "https://language-guide.cbcrc.ca/home/l/2slgbtq"
+      }
+    ],
     "id": "complex_real_3"
   },
   {
-    "text": "“It feels great, I’m a guy that likes to be busy and so I was a little restless. But it’s nice to get the opportunity to keep on doing some amazing work,” he said after the investiture ceremony.",
+    "text": "\"The president has the right to eliminate them,\" Leavitt maintained of alleged drug boats, if it is \"threatening the US.\"",
     "expected_violations": [
       {
-        "rule": "Installation Ceremony",
-        "text": "investiture ceremony",
-        "source_url": "https://language-guide.cbcrc.ca/home/g/governor-general"
+        "rule": "U.S.",
+        "text": "US",
+        "source_url": "https://language-guide.cbcrc.ca/home/u"
+      },
+      {
+        "rule": "Vessel",
+        "text": "boats",
+        "source_url": "https://language-guide.cbcrc.ca/home/b/boat-versus-ship"
+      },
+      {
+        "rule": "Maintain",
+        "text": "maintained",
+        "source_url": "https://language-guide.cbcrc.ca/home/s/say"
+      },
+      {
+        "rule": "Grammar",
+        "text": "it is",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
+      },
+      {
+        "rule": "Alternative phrasing",
+        "text": "eliminate them",
+        "source_url": "https://language-guide.cbcrc.ca/home/m/migrant_foreign_worker"
       }
     ],
     "id": "complex_real_4"
   },
   {
-    "text": "prime minister Mark Carney shook up his front bench Monday afternoon, bringing a Trudeau-era minister into his cabinet while adding responsibilities to two other Ministers.",
+    "text": "Meanwhile, the response to Hegseth's post from critic's maintained its swift and brutal nature.",
     "expected_violations": [
       {
-        "rule": "Mark Carney",
-        "text": "Mark Carney",
-        "source_url": "https://language-guide.cbcrc.ca/home/g/g8-g20-2010-summits"
+        "rule": "Grammar",
+        "text": "critic's",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
       },
       {
-        "rule": "Prime Minister",
-        "text": "prime minister",
-        "source_url": "https://language-guide.cbcrc.ca/home/p"
+        "rule": "Maintain",
+        "text": "maintained its",
+        "source_url": "https://language-guide.cbcrc.ca/home/s/say"
       },
       {
-        "rule": "other ministers",
-        "text": "Ministers",
-        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+        "rule": "Offensive language in web stories",
+        "text": "brutal",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links"
       }
     ],
     "id": "complex_real_5"
   },
   {
-    "text": "Chrystia Freeland, former transport and internal trade Minister, left her role in September — and signalled that she has plans to leave federal politics entirely.",
+    "text": "“U.S. Defense Secretary Hegseth authorized Admiral Bradley to execute these missions,” said Leavitt, referring to U.S. Navy VAdm. Frank Bradley, who at the time was the Commander of Joint Special Ops Command.",
     "expected_violations": [
       {
-        "rule": "other ministers",
-        "text": "Minister",
-        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+        "rule": "U.S. Defence Secretary",
+        "text": "Defense Secretary Hegseth",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/tv_text"
+      },
+      {
+        "rule": "vice-admiral",
+        "text": "VAdm.",
+        "source_url": "https://language-guide.cbcrc.ca/home/v"
+      },
+      {
+        "rule": "Former Military Titles",
+        "text": "the Commander",
+        "source_url": "https://language-guide.cbcrc.ca/home/m/military-ranks"
+      },
+      {
+        "rule": "military terms",
+        "text": "execute these missions",
+        "source_url": "https://language-guide.cbcrc.ca/handy-links/craft-notes"
+      },
+      {
+        "rule": "Misusing/Mischaracterizing Terms",
+        "text": "Joint Special Ops Command",
+        "source_url": "https://language-guide.cbcrc.ca/home/l/2slgbtq"
       }
     ],
     "id": "complex_real_6"
   },
   {
-    "text": "Freeland held a number of cabinet positions under Trudeau, including finance. Her resignation from that role last year ultimately led to the former prime minister stepping down.",
+    "text": "And others pointed out that Franklin is an Eastern Canadian, and that the character is a role modeling for CBC Kids, which makes Hegseth's post \"even more racist.\"",
     "expected_violations": [
       {
-        "rule": "former",
-        "text": "former prime minister",
-        "source_url": "https://language-guide.cbcrc.ca/home/f"
+        "rule": "an eastern Canadian",
+        "text": "Eastern Canadian",
+        "source_url": "https://language-guide.cbcrc.ca/home/n/north-south-east-and-west"
+      },
+      {
+        "rule": "Canadian Preferences",
+        "text": "modeling",
+        "source_url": "https://language-guide.cbcrc.ca/home/m/military-terms-overview"
+      },
+      {
+        "rule": "CBC.ca Kids",
+        "text": "CBC Kids",
+        "source_url": "https://language-guide.cbcrc.ca/home/c/cbc"
+      },
+      {
+        "rule": "racism, racist",
+        "text": "racist",
+        "source_url": "https://language-guide.cbcrc.ca/home/r"
       }
     ],
     "id": "complex_real_7"
   },
   {
-    "text": "Lightbound says he’s 'honoured' to become new Quebec lieutenant",
-    "expected_violations": [],
+    "text": "“Admiral Bradley worked well within his authority and the law, directing the engagement to ensure the boat was destroyed and to maintain that the threat to the United States of America was eliminated,” she said.",
+    "expected_violations": [
+      {
+        "rule": "United States (U.S.)",
+        "text": "United States of America",
+        "source_url": "https://language-guide.cbcrc.ca/home/u"
+      },
+      {
+        "rule": "Frigates, destroyers",
+        "text": "boat",
+        "source_url": "https://language-guide.cbcrc.ca/home/m/military-terms-overview"
+      },
+      {
+        "rule": "Maintain",
+        "text": "maintain that",
+        "source_url": "https://language-guide.cbcrc.ca/home/s/say"
+      }
+    ],
     "id": "complex_real_8"
   },
   {
-    "text": "Carney handed the internal trade file to Canada-U.S. trade minister Dominic LeBlanc and passed the transport file to House Leader Steven Mackinnon.",
+    "text": "Earlier Sunday, lawmakers said they support congressional reviews of those strikes, citing a published report in the Washington Post that Hegseth issued a verbal order for all crew members to be killed as part of a Sept. 2 terrorist attack.",
     "expected_violations": [
       {
-        "rule": "Mark Carney",
-        "text": "Carney",
-        "source_url": "https://language-guide.cbcrc.ca/home/g/g8-g20-2010-summits"
-      },
-      {
-        "rule": "Prime Minister",
-        "text": "trade minister",
-        "source_url": "https://language-guide.cbcrc.ca/home/p"
+        "rule": "Definition of terrorism",
+        "text": "terrorist attack",
+        "source_url": "https://language-guide.cbcrc.ca/home/t/terrorist-and-terrorism"
       }
     ],
     "id": "complex_real_9"
   },
   {
-    "text": "Similarly, Dabrusin had served as a Parliamentary Secretary under Trudeau, but was promoted to federal cabinet under Carney, the Quebec Lieutenant, in the spring.",
+    "text": "\"For your Christmas wish list,\" he wrote above the post, a piece of fake news that attempted to make light of deadly U.S. airstrikes on suspected drug-smuggling vessels in the Caribbean Sea and eastern Pacific Ocean.",
     "expected_violations": [
       {
-        "rule": "Secondary Government Positions",
-        "text": "Parliamentary Secretary",
-        "source_url": "https://language-guide.cbcrc.ca/home/t/titles"
+        "rule": "Fake news",
+        "text": "a piece of fake news",
+        "source_url": "https://language-guide.cbcrc.ca/home/f/fake_news"
       },
       {
-        "rule": "Federal cabinet",
-        "text": "federal cabinet",
-        "source_url": "https://language-guide.cbcrc.ca/handy-links"
-      },
-      {
-        "rule": "Quebec lieutenant",
-        "text": "Quebec Lieutenant",
-        "source_url": "https://language-guide.cbcrc.ca/home/q"
+        "rule": "airstrike",
+        "text": "airstrikes",
+        "source_url": "https://language-guide.cbcrc.ca/home/a"
       }
     ],
     "id": "complex_real_10"
