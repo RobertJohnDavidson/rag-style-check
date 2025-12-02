@@ -64,8 +64,10 @@ See [DOCKER.md](DOCKER.md) for detailed Docker deployment instructions.
 
 ```bash
 cd frontend
-npm install
-npm run dev
+# Install dependencies with bun (or use npm/yarn if you prefer)
+bun install
+# Run dev server
+bun run dev -- --host 0.0.0.0
 ```
 
 ## Usage

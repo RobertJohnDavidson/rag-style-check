@@ -23,14 +23,14 @@ services:
 
   # Frontend dev server (optional - for development)
   frontend-dev:
-    image: node:20-slim
+    image: oven/bun:latest
     working_dir: /app
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    command: sh -c "bun install && bun run dev -- --host 0.0.0.0"
     environment:
       - VITE_API_URL=http://localhost:8000
     profiles:

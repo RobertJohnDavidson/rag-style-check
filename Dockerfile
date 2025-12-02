@@ -1,19 +1,22 @@
 # Multi-stage build for CBC News Style Checker
 
-# Stage 1: Build frontend
-FROM node:20-slim AS frontend-builder
+# Stage 1: Build frontend using Bun
+FROM oven/bun:latest AS frontend-builder
 
 WORKDIR /app/frontend
 
-# Copy frontend package files
-COPY frontend/package*.json ./
-RUN npm ci
+
+COPY frontend/package.json ./
+COPY frontend/bun.lockb ./
+COPY frontend/src ./
+
+RUN bun install
 
 # Copy frontend source
 COPY frontend/ ./
 
-# Build frontend
-RUN npm run build
+# Build frontend with Bun
+RUN bun run build
 
 # Stage 2: Python backend
 FROM python:3.12-slim

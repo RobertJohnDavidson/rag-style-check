@@ -33,6 +33,16 @@ docker compose down
 - Backend API: `http://localhost:8000`
 - Frontend: `http://localhost:5173`
 
+Note: The frontend dev service uses `bun`. Locally you can also run:
+
+```bash
+cd frontend
+# Install deps with bun
+bun install
+# Run dev server
+bun run dev -- --host 0.0.0.0
+```
+
 ## Environment Variables
 
 Create a `.env` file in the project root:
