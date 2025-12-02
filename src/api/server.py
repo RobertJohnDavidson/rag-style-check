@@ -9,6 +9,8 @@ Provides REST API endpoints for:
 
 from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from typing import Optional, Dict, Any, List
 import json
 import os
@@ -41,8 +43,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount static files for frontend (if built)
+frontend_build_path = Path(__file__).parent.parent.parent / "frontend" / "build"
+if frontend_build_path.exists():
+    app.mount("/assets", StaticFiles(directory=frontend_build_path / "_app" / "immutable"), name="assets")
+
 # Initialize auditor (singleton)
 auditor: Optional[StyleAuditor] = None
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for container orchestration."""
+    return {"status": "healthy", "service": "cbc-style-checker", "timestamp": datetime.now().isoformat()}
 
 
 def get_auditor() -> StyleAuditor:
@@ -294,6 +307,23 @@ async def health_check():
         }
 
 
+# Serve frontend (catch-all route for SPA)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve the built frontend SPA."""
+    if frontend_build_path.exists():
+        # Try to serve the specific file
+        file_path = frontend_build_path / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        # Otherwise serve index.html for SPA routing
+        index_path = frontend_build_path / "index.html"
+        if index_path.exists():
+            return FileResponse(index_path)
+    raise HTTPException(status_code=404, detail="Frontend not built. Run 'npm run build' in frontend/")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+
