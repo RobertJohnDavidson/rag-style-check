@@ -1,11 +1,11 @@
-// CBC-themed design system with Tailwind utility functions
+// Neutral design system with Tailwind utility functions
 
 // Color palette
 export const colors = {
-	primary: '#CC0000',      // CBC red
-	primaryHover: '#A30000', // Darker CBC red for hover
-	secondary: '#333333',    // Dark gray
-	light: '#F7F7F7',       // Light background
+	primary: '#4B5563',      // Neutral gray
+	primaryHover: '#374151', // Darker gray for hover
+	secondary: '#6B7280',    // Medium gray
+	light: '#F7F7F7',        // Light background
 	white: '#FFFFFF',
 	success: '#10B981',      // Green
 	successHover: '#059669',
@@ -84,7 +84,7 @@ export function buttonVariants(
 	const variantClasses = {
 		primary: disabled 
 			? 'bg-gray-400 text-white cursor-not-allowed'
-			: 'bg-[#CC0000] hover:bg-[#A30000] text-white focus:ring-[#CC0000]',
+			: 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500',
 		secondary: disabled
 			? 'bg-gray-300 text-gray-500 cursor-not-allowed'
 			: 'bg-gray-200 hover:bg-gray-300 text-gray-800 focus:ring-gray-400',
@@ -107,7 +107,7 @@ export function inputClasses(error?: string): string {
 	const baseClasses = 'w-full rounded-lg transition-colors focus:outline-none focus:ring-2';
 	const errorClasses = error
 		? 'border-2 border-red-500 focus:ring-red-500 focus:border-red-500'
-		: 'border border-gray-300 focus:ring-[#CC0000] focus:border-[#CC0000]';
+		: 'border border-gray-300 focus:ring-gray-500 focus:border-gray-500';
 	
 	return `${baseClasses} ${errorClasses}`;
 }

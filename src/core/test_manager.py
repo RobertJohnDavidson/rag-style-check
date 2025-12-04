@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 from google.cloud.sql.connector import Connector, IPTypes
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+from sqlalchemy import text as sql_text
 
 load_dotenv()
 
@@ -22,9 +22,6 @@ INSTANCE_NAME = os.getenv("INSTANCE_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_NAME = os.getenv("DB_NAME", "postgres")
 
-# Global connector
-connector = Connector()
-
 def get_ip_type():
     """Determine IP type based on environment"""
     if os.getenv("K_SERVICE"):
@@ -33,7 +30,11 @@ def get_ip_type():
 
 async def get_async_conn():
     """Create async database connection"""
-    return await connector.connect_async(
+    # Create a new Connector with explicit loop to avoid event loop conflicts
+    import asyncio
+    loop = asyncio.get_running_loop()
+    connector = Connector(loop=loop)
+    conn = await connector.connect_async(
         f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
         "asyncpg",
         user=DB_USER,
@@ -41,6 +42,7 @@ async def get_async_conn():
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
+    return conn
 
 # Create async engine (singleton pattern)
 _engine = None
@@ -75,7 +77,7 @@ class TestManager:
         notes: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create a new test case"""
-        query = text("""
+        query = sql_text("""
             INSERT INTO test_cases (label, text, expected_violations, generation_method, notes)
             VALUES (:label, :text, :expected_violations, :generation_method, :notes)
             RETURNING id, label, text, expected_violations, generation_method, notes, created_at, updated_at
@@ -97,7 +99,7 @@ class TestManager:
     
     async def get_test(self, test_id: UUID) -> Optional[Dict[str, Any]]:
         """Get a test case by ID"""
-        query = text("""
+        query = sql_text("""
             SELECT id, label, text, expected_violations, generation_method, notes, created_at, updated_at
             FROM test_cases
             WHERE id = :test_id
@@ -133,10 +135,10 @@ class TestManager:
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
         
         # Get total count
-        count_query = text(f"SELECT COUNT(*) FROM test_cases {where_sql}")
+        count_query = sql_text(f"SELECT COUNT(*) FROM test_cases {where_sql}")
         
         # Get paginated results
-        list_query = text(f"""
+        list_query = sql_text(f"""
             SELECT id, label, text, expected_violations, generation_method, notes, created_at, updated_at
             FROM test_cases
             {where_sql}
@@ -186,7 +188,7 @@ class TestManager:
         if not updates:
             return await self.get_test(test_id)
         
-        query = text(f"""
+        query = sql_text(f"""
             UPDATE test_cases
             SET {', '.join(updates)}
             WHERE id = :test_id
@@ -200,7 +202,7 @@ class TestManager:
     
     async def delete_test(self, test_id: UUID) -> bool:
         """Delete a test case (and cascade to results)"""
-        query = text("DELETE FROM test_cases WHERE id = :test_id")
+        query = sql_text("DELETE FROM test_cases WHERE id = :test_id")
         
         async with self.engine.begin() as conn:
             result = await conn.execute(query, {"test_id": str(test_id)})
@@ -222,7 +224,7 @@ class TestManager:
         tuning_parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Save a test execution result"""
-        query = text("""
+        query = sql_text("""
             INSERT INTO test_results (
                 test_id, true_positives, false_positives, false_negatives, true_negatives,
                 precision, recall, f1_score, detected_violations, tuning_parameters
@@ -263,9 +265,9 @@ class TestManager:
         """Get results for a specific test with pagination"""
         offset = (page - 1) * page_size
         
-        count_query = text("SELECT COUNT(*) FROM test_results WHERE test_id = :test_id")
+        count_query = sql_text("SELECT COUNT(*) FROM test_results WHERE test_id = :test_id")
         
-        list_query = text("""
+        list_query = sql_text("""
             SELECT id, test_id, true_positives, false_positives, false_negatives, true_negatives,
                    precision, recall, f1_score, detected_violations, tuning_parameters, executed_at
             FROM test_results

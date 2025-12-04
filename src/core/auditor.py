@@ -62,7 +62,7 @@ if not PROJECT_NAME:
     raise ValueError("PROJECT_NAME not found in environment variables.")
 
 # --- DATABASE CONNECTION LOGIC (COPIED FROM INGEST.PY) ---
-connector = Connector()
+_sync_connector = None
 
 def get_ip_type():
     if os.getenv("K_SERVICE"):
@@ -70,7 +70,11 @@ def get_ip_type():
     return IPTypes.PUBLIC
 
 def get_sync_conn():
-    return connector.connect(
+    # Sync connections can use a cached connector since they don't use event loops
+    global _sync_connector
+    if _sync_connector is None:
+        _sync_connector = Connector()
+    return _sync_connector.connect(
         f"{PROJECT_ID}:{DB_REGION}:{INSTANCE_NAME}",
         "pg8000",
         user=DB_USER,
@@ -80,7 +84,10 @@ def get_sync_conn():
     )
 
 async def get_async_conn():
-    return await connector.connect_async(
+    # Create a new Connector with explicit loop to avoid event loop conflicts
+    loop = asyncio.get_running_loop()
+    connector = Connector(loop=loop)
+    conn = await connector.connect_async(
         f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
         "asyncpg",
         user=DB_USER,
@@ -88,6 +95,7 @@ async def get_async_conn():
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
+    return conn
 # ---------------------------------------------------------
 
 # 1. Configure Embeddings

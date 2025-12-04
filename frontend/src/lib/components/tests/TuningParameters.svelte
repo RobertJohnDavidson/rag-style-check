@@ -26,9 +26,10 @@
 				bind:value={parameters.model_name}
 				{disabled}
 			>
-				<option value="models/gemini-1.5-flash">Gemini 1.5 Flash</option>
-				<option value="models/gemini-1.5-pro">Gemini 1.5 Pro</option>
-				<option value="models/gemini-2.0-flash-thinking-exp">Gemini 2.0 Thinking</option>
+
+				<option value="gemini-2.5-flash">Gemini 2.5 flash</option>
+				<option value="gemini-2.5-flash-lite">Gemini 2.5 flash lite</option>
+
 			</Select>
 		</div>
 
