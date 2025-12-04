@@ -1,29 +1,26 @@
+"""
+Configurable Style Auditor - Injectable tuning parameters for test execution.
+This is a modified version of auditor.py that accepts runtime parameters.
+"""
+
 import os
 import json
 import asyncio
-# import chromadb  <-- REPLACED
 from dotenv import load_dotenv
 from spacy.lang.en import English 
 
-# --- NEW IMPORTS FOR CLOUD SQL & IAM ---
 from google.cloud.sql.connector import Connector, IPTypes
 import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
 from llama_index.vector_stores.postgres import PGVectorStore
-from google.genai.types import EmbedContentConfig # Required for 768-dim forcing
+from google.genai.types import EmbedContentConfig
 
 from llama_index.core import VectorStoreIndex, Settings, QueryBundle
-# from llama_index.vector_stores.chroma import ChromaVectorStore <-- REPLACED
 from llama_index.core.retrievers import VectorIndexRetriever
 
-# Embeddings & LLM
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 from llama_index.llms.google_genai import GoogleGenAI
 
-# Import Common Rules
-from src.legacy.prompts import COMMON_RULES
-
-# --- IMPORT CUSTOM RERANKER ---
 try:
     from src.core.reranker import VertexAIRerank
 except ImportError:
@@ -32,8 +29,7 @@ except ImportError:
 
 load_dotenv()
 
-# --- CONFIGURATION ---
-# Database Config (NEW)
+# --- FIXED CONFIGURATION (From Environment) ---
 PROJECT_ID = os.getenv("PROJECT_NAME")
 REGION = os.getenv("REGION", "us-central1")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME")
@@ -42,26 +38,15 @@ DB_NAME = os.getenv("DB_NAME", "postgres")
 DB_REGION = os.getenv("DB_REGION", REGION)
 TABLE_NAME = "rag_vectors"
 
-# Model Config
-# Updated to Gemini-001 to match your Ingest, but forced to 768 dims
+# Model Config - EMBEDDING PARAMETERS ARE FIXED
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
-EMBED_DIM = 768 
-MODEL = os.getenv("MODEL", "models/gemini-1.5-flash")
-PROJECT_NAME = os.getenv("PROJECT_NAME") # Kept for backward compatibility with your existing env vars
-
-# Tuning
-INITIAL_RETRIEVAL_COUNT = 75  # Increased to cast wider net
-FINAL_TOP_K = 25              # Increased to give more context per sentence
-RERANK_SCORE_THRESHOLD = 0.10  # Lowered from 0.15 to be even less strict
-AGGREGATED_RULE_LIMIT = 40    # Increased to allow more comprehensive coverage
-MIN_SENTENCE_LENGTH = 5
-MAX_AGENT_ITERATIONS = 3  # Max thinking cycles for agent refinement
-INCLUDE_COMMON_RULES = False
+EMBED_DIM = 768  # Must match DB schema
+PROJECT_NAME = os.getenv("PROJECT_NAME")
 
 if not PROJECT_NAME:
     raise ValueError("PROJECT_NAME not found in environment variables.")
 
-# --- DATABASE CONNECTION LOGIC (COPIED FROM INGEST.PY) ---
+# --- DATABASE CONNECTION LOGIC ---
 connector = Connector()
 
 def get_ip_type():
@@ -88,40 +73,97 @@ async def get_async_conn():
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
-# ---------------------------------------------------------
 
-# 1. Configure Embeddings
-Settings.embed_model = GoogleGenAIEmbedding(
-    model_name=EMBEDDING_MODEL,
-    vertexai_config={
-        "project": PROJECT_NAME,
-        "location": REGION
-    },
-    # CRITICAL: Force 768 dimensions to match your DB schema
-    embedding_config=EmbedContentConfig(
-        output_dimensionality=EMBED_DIM 
-    )
-)
 
-# 2. Configure LLM
-Settings.llm = GoogleGenAI(
-    model=MODEL,
-    vertexai_config={
-        "project": PROJECT_NAME,
-        "location": REGION
-    },
-    temperature=0.1
-)
-
-# 3. Load NLP
-nlp = English()
-nlp.add_pipe("sentencizer")
-
-class StyleAuditor:
-    def __init__(self):
+class ConfigurableStyleAuditor:
+    """
+    Style auditor with configurable tuning parameters.
+    Embedding model and dimensions are fixed (must match DB schema).
+    """
+    
+    def __init__(
+        self,
+        model_name: str = "models/gemini-1.5-flash",
+        temperature: float = 0.1,
+        initial_retrieval_count: int = 75,
+        final_top_k: int = 25,
+        rerank_score_threshold: float = 0.10,
+        aggregated_rule_limit: int = 40,
+        min_sentence_length: int = 5,
+        max_agent_iterations: int = 3,
+        confidence_threshold: float = 10.0
+    ):
+        """
+        Initialize configurable auditor with custom parameters.
+        
+        Args:
+            model_name: LLM model to use (e.g., "models/gemini-1.5-flash", "models/gemini-2.0-flash-thinking-exp")
+            temperature: LLM temperature (0.0-2.0)
+            initial_retrieval_count: Number of rules to retrieve initially (10-200)
+            final_top_k: Number of top rules after reranking (5-100)
+            rerank_score_threshold: Minimum rerank score to include a rule (0.0-1.0)
+            aggregated_rule_limit: Maximum number of unique rules to use (10-100)
+            min_sentence_length: Minimum sentence length in words (1-50)
+            max_agent_iterations: Maximum agent thinking cycles (1-10)
+            confidence_threshold: Minimum confidence score for violations (0.0-100.0)
+        """
+        # Validate parameters
+        self._validate_parameters(
+            model_name, temperature, initial_retrieval_count, final_top_k,
+            rerank_score_threshold, aggregated_rule_limit, min_sentence_length,
+            max_agent_iterations, confidence_threshold
+        )
+        
+        # Store configurable parameters
+        self.model_name = model_name
+        self.temperature = temperature
+        self.initial_retrieval_count = initial_retrieval_count
+        self.final_top_k = final_top_k
+        self.rerank_score_threshold = rerank_score_threshold
+        self.aggregated_rule_limit = aggregated_rule_limit
+        self.min_sentence_length = min_sentence_length
+        self.max_agent_iterations = max_agent_iterations
+        self.confidence_threshold = confidence_threshold
+        
+        print(f"🔧 Configurable Auditor initialized with:")
+        print(f"   Model: {model_name}")
+        print(f"   Temperature: {temperature}")
+        print(f"   Retrieval: {initial_retrieval_count} → Rerank: {final_top_k}")
+        print(f"   Rerank threshold: {rerank_score_threshold}")
+        print(f"   Rule limit: {aggregated_rule_limit}")
+        print(f"   Min sentence length: {min_sentence_length}")
+        print(f"   Max iterations: {max_agent_iterations}")
+        print(f"   Confidence threshold: {confidence_threshold}")
+        
+        # Configure embeddings (FIXED - from environment)
+        Settings.embed_model = GoogleGenAIEmbedding(
+            model_name=EMBEDDING_MODEL,
+            vertexai_config={
+                "project": PROJECT_NAME,
+                "location": REGION
+            },
+            embedding_config=EmbedContentConfig(
+                output_dimensionality=EMBED_DIM
+            )
+        )
+        
+        # Configure LLM (CONFIGURABLE)
+        Settings.llm = GoogleGenAI(
+            model=model_name,
+            vertexai_config={
+                "project": PROJECT_NAME,
+                "location": REGION
+            },
+            temperature=temperature
+        )
+        
+        # Load NLP
+        self.nlp = English()
+        self.nlp.add_pipe("sentencizer")
+        
+        # Initialize database connection
         print(f"🔌 Connecting to Cloud SQL Instance: {INSTANCE_NAME}...")
         
-        # --- NEW DB INIT START ---
         self.engine = sqlalchemy.create_engine(
             "postgresql+pg8000://",
             creator=get_sync_conn,
@@ -136,16 +178,15 @@ class StyleAuditor:
             engine=self.engine,
             async_engine=self.async_engine,
             table_name=TABLE_NAME,
-            embed_dim=EMBED_DIM, # 768
+            embed_dim=EMBED_DIM,
             hybrid_search=True,
             text_search_config="english",
             hnsw_kwargs={
-                "hnsw_m": 24,                # Denser graph (Standard is 16)
-                "hnsw_ef_construction": 512, # Deep index build (Standard is 64)
+                "hnsw_m": 24,
+                "hnsw_ef_construction": 512,
                 "hnsw_dist_method": "vector_cosine_ops",
             },
         )
-        # --- NEW DB INIT END ---
 
         self.index = VectorStoreIndex.from_vector_store(
             vector_store=self.vector_store,
@@ -154,7 +195,7 @@ class StyleAuditor:
         
         self.retriever = VectorIndexRetriever(
             index=self.index,
-            similarity_top_k=INITIAL_RETRIEVAL_COUNT,
+            similarity_top_k=self.initial_retrieval_count,
             vector_store_query_mode="hybrid",
             sparse_top_k=10
         )
@@ -164,25 +205,53 @@ class StyleAuditor:
                 project_id=PROJECT_NAME,
                 location_id=REGION,
                 ranking_config="default_ranking_config",
-                top_n=FINAL_TOP_K
+                top_n=self.final_top_k
             )
         else:
             self.reranker = None
             
         print("✅ Connected to Cloud SQL Vector Store.")
+    
+    def _validate_parameters(
+        self, model_name, temperature, initial_retrieval_count, final_top_k,
+        rerank_score_threshold, aggregated_rule_limit, min_sentence_length,
+        max_agent_iterations, confidence_threshold
+    ):
+        """Validate parameter ranges"""
+        if not isinstance(model_name, str) or not model_name:
+            raise ValueError("model_name must be a non-empty string")
+        
+        if not 0.0 <= temperature <= 2.0:
+            raise ValueError("temperature must be between 0.0 and 2.0")
+        
+        if not 10 <= initial_retrieval_count <= 200:
+            raise ValueError("initial_retrieval_count must be between 10 and 200")
+        
+        if not 5 <= final_top_k <= 100:
+            raise ValueError("final_top_k must be between 5 and 100")
+        
+        if not 0.0 <= rerank_score_threshold <= 1.0:
+            raise ValueError("rerank_score_threshold must be between 0.0 and 1.0")
+        
+        if not 10 <= aggregated_rule_limit <= 100:
+            raise ValueError("aggregated_rule_limit must be between 10 and 100")
+        
+        if not 1 <= min_sentence_length <= 50:
+            raise ValueError("min_sentence_length must be between 1 and 50")
+        
+        if not 1 <= max_agent_iterations <= 10:
+            raise ValueError("max_agent_iterations must be between 1 and 10")
+        
+        if not 0.0 <= confidence_threshold <= 100.0:
+            raise ValueError("confidence_threshold must be between 0.0 and 100.0")
 
     async def check_text_async(self, text):
         """Async wrapper for check_text to work with FastAPI."""
-        # Run the sync check_text in a thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, self.check_text, text)
 
     def check_text(self, text):
-        # Optional: Boost search accuracy for audit queries
-        # with self.engine.connect() as conn:
-        #     conn.execute(sqlalchemy.text("SET hnsw.ef_search = 100"))
-        #     conn.commit()
-
+        """Main entry point for auditing text"""
         paragraphs = self._split_paragraphs(text)
         all_violations = []
 
@@ -193,7 +262,6 @@ class StyleAuditor:
             if paragraph_violations:
                 all_violations.extend(paragraph_violations)
         
-        # Final deduplication pass across all paragraphs
         return self._deduplicate_violations(all_violations)
 
     def _split_paragraphs(self, text):
@@ -207,10 +275,9 @@ class StyleAuditor:
 
     def _audit_paragraph_agentic(self, paragraph):
         """Agentic audit with iterative refinement and self-reflection."""
-        doc = nlp(paragraph)
-        sentences = [sent.text.strip() for sent in doc.sents if len(sent.text.strip()) > MIN_SENTENCE_LENGTH]
+        doc = self.nlp(paragraph)
+        sentences = [sent.text.strip() for sent in doc.sents if len(sent.text.strip()) > self.min_sentence_length]
         
-        # Initial retrieval
         contexts = self._collect_rule_contexts(sentences)
         violations = []
         
@@ -218,10 +285,9 @@ class StyleAuditor:
         print(f"🤖 AGENTIC AUDIT - Starting analysis")
         print(f"{'='*60}")
         
-        for iteration in range(MAX_AGENT_ITERATIONS):
-            print(f"\n--- Iteration {iteration + 1}/{MAX_AGENT_ITERATIONS} ---")
+        for iteration in range(self.max_agent_iterations):
+            print(f"\n--- Iteration {iteration + 1}/{self.max_agent_iterations} ---")
             
-            # Ask agent to audit with current context
             prompt = self._build_paragraph_prompt(paragraph, contexts, violations, iteration)
             
             print(f"📤 Sending prompt to LLM...")
@@ -241,11 +307,10 @@ class StyleAuditor:
                 print(f"❌ Error calling LLM (iteration {iteration + 1}): {e}")
                 break
             
-            # Parse response
             if isinstance(result, dict):
                 new_violations = result.get("violations", [])
                 needs_more_context = result.get("needs_more_context", False)
-                is_confident = result.get("confident", True)  # Default to confident
+                is_confident = result.get("confident", True)
                 additional_queries = result.get("additional_queries", [])
                 
                 print(f"\n✅ Agent response parsed:")
@@ -260,33 +325,26 @@ class StyleAuditor:
                 is_confident = True
                 additional_queries = []
             
-            # Update violations
             if new_violations:
                 violations = self._format_violations(new_violations, paragraph, contexts)
                 print(f"   - Formatted {len(violations)} violations")
             
-            # If agent is confident, stop early
-            # BUT: Don't trust confidence if we have very few rules
             if is_confident and not needs_more_context:
-                if len(contexts) < 10:  # Increased from 10 - require more rules for confidence
+                if len(contexts) < 10:
                     print(f"⚠️  Agent claims confidence but only {len(contexts)} rules available. Requesting more context.")
                     is_confident = False
                     needs_more_context = True
-                    # Generate queries based on paragraph content
                     import re
-                    paragraph_text = paragraph
-                    keywords = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', paragraph_text)
+                    keywords = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', paragraph)
                     additional_queries = list(set(keywords))[:3]
                 else:
                     print(f"\n✅ Agent is confident. Stopping at iteration {iteration + 1}.")
                     break
             
-            # If max iterations reached, stop
-            if iteration == MAX_AGENT_ITERATIONS - 1:
+            if iteration == self.max_agent_iterations - 1:
                 print(f"\n⏱️  Max iterations reached. Stopping.")
                 break
             
-            # Retrieve additional context based on agent's questions
             if additional_queries:
                 print(f"\n🔍 Agent requesting more context...")
                 print(f"   Queries: {additional_queries}")
@@ -296,26 +354,19 @@ class StyleAuditor:
                     print(f"     • {ctx['term']} (score: {ctx['score']:.3f})")
                 contexts.extend(additional_contexts)
         
-        # Deduplicate violations within this paragraph
         deduplicated = self._deduplicate_violations(violations)
         print(f"\n🔧 Deduplication: {len(violations)} → {len(deduplicated)} violations")
         print(f"{'='*60}\n")
         
         return deduplicated
-    
-    def _audit_paragraph(self, paragraph):
-        """Legacy method for backwards compatibility."""
-        return self._audit_paragraph_agentic(paragraph)
 
     def _collect_additional_contexts(self, queries):
         """Retrieve additional rule contexts based on agent's questions."""
         aggregated = {}
         
         for query in queries:
-            # Expand query with synonyms/variations for better matching
             expanded_queries = [query]
             
-            # Add variations for better semantic matching
             if "quotation" in query.lower():
                 expanded_queries.extend(["quotes", "quotation marks", "quote marks"])
             if "dash" in query.lower():
@@ -323,18 +374,17 @@ class StyleAuditor:
             if "capitalization" in query.lower() or "capital" in query.lower():
                 expanded_queries.extend(["uppercase", "lowercase", "title case"])
             
-            # Retrieve with all query variations
             for q in expanded_queries:
                 nodes = self.retriever.retrieve(q)
                 
                 if nodes and self.reranker:
                     try:
-                        query_bundle = QueryBundle(query_str=query)  # Use original query for reranking
+                        query_bundle = QueryBundle(query_str=query)
                         nodes = self.reranker.postprocess_nodes(nodes=nodes, query_bundle=query_bundle)
                     except Exception:
-                        nodes = nodes[:FINAL_TOP_K]
+                        nodes = nodes[:self.final_top_k]
                 else:
-                    nodes = nodes[:FINAL_TOP_K] if nodes else []
+                    nodes = nodes[:self.final_top_k] if nodes else []
                 
                 for node in self._filter_nodes(nodes):
                     term = node.metadata.get('term', 'Untitled Rule')
@@ -352,9 +402,9 @@ class StyleAuditor:
                         }
         
         sorted_rules = sorted(aggregated.values(), key=lambda r: r['score'], reverse=True)
-        limited = sorted_rules[:10]  # Increased from 5
+        limited = sorted_rules[:10]
         
-        for idx, rule in enumerate(limited, start=100):  # Start IDs at 100 to differentiate
+        for idx, rule in enumerate(limited, start=100):
             rule["id"] = f"ADDITIONAL_RULE_#{idx}"
         
         return limited
@@ -362,7 +412,6 @@ class StyleAuditor:
     def _collect_rule_contexts(self, sentences):
         aggregated = {}
 
-        # Retrieve based on full sentences - process ALL sentences, don't break early
         for sentence in sentences:
             nodes = self._retrieve_nodes(sentence)
             for node in nodes:
@@ -378,14 +427,10 @@ class StyleAuditor:
                         "score": score,
                         "source_type": "retrieved"
                     }
-            # Continue processing all sentences to get comprehensive coverage
         
-        # If we didn't get enough rules, try keyword-based retrieval
         if len(aggregated) < 10:
-            # Extract important words from the paragraph
             import re
             paragraph_text = " ".join(sentences)
-            # Find capitalized words, proper nouns, and important terms
             keywords = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', paragraph_text)
             keywords = list(set(keywords))
             
@@ -394,7 +439,7 @@ class StyleAuditor:
                 for node in nodes:
                     term = node.metadata.get('term', 'Untitled Rule')
                     key = (term, node.metadata.get('url', ''))
-                    score = getattr(node, 'score', 0) * 0.8  # Slightly lower priority
+                    score = getattr(node, 'score', 0) * 0.8
                     current = aggregated.get(key)
                     if not current or score > current['score']:
                         aggregated[key] = {
@@ -406,7 +451,7 @@ class StyleAuditor:
                         }
 
         sorted_rules = sorted(aggregated.values(), key=lambda r: r['score'], reverse=True)
-        limited = sorted_rules[:AGGREGATED_RULE_LIMIT]
+        limited = sorted_rules[:self.aggregated_rule_limit]
 
         for idx, rule in enumerate(limited, start=1):
             rule["id"] = f"RETRIEVED_RULE_#{idx}"
@@ -422,16 +467,16 @@ class StyleAuditor:
                 nodes = self.reranker.postprocess_nodes(nodes=nodes, query_bundle=query_bundle)
             except Exception as e:
                 print(f"Rerank failed (fallback to vector): {e}")
-                nodes = nodes[:FINAL_TOP_K]
+                nodes = nodes[:self.final_top_k]
         elif nodes:
-            nodes = nodes[:FINAL_TOP_K]
+            nodes = nodes[:self.final_top_k]
 
         return self._filter_nodes(nodes)
 
     def _filter_nodes(self, nodes):
         if not nodes:
             return []
-        return [node for node in nodes if getattr(node, 'score', 0) >= RERANK_SCORE_THRESHOLD]
+        return [node for node in nodes if getattr(node, 'score', 0) >= self.rerank_score_threshold]
 
     def _build_paragraph_prompt(self, paragraph, contexts, current_violations=None, iteration=0):
         if contexts:
@@ -444,7 +489,6 @@ class StyleAuditor:
         else:
             context_block = "No specific rules were retrieved from the database for this text."
         
-        # Add reflection context if this is a refinement iteration
         reflection_block = ""
         if iteration > 0 and current_violations:
             violations_summary = "\n".join([f"- {v.get('text', 'N/A')}: {v.get('violation', 'N/A')}" for v in current_violations[:5]])
@@ -455,14 +499,6 @@ class StyleAuditor:
         
         Review your previous findings. Are there duplicates? Did you miss anything? Do you need more context?
         """
-
-        # # Conditionally add common rules
-        # common_rules_block = ""
-        # if INCLUDE_COMMON_RULES:
-        #     common_rules_block = f"""
-        # --- COMMON CBC RULES (reference as COMMON_RULE:<Title>) ---
-        # {COMMON_RULES}
-        # """
         
         prompt = f"""
         You are an expert Copy Editor for CBC News with agentic capabilities.
@@ -585,11 +621,10 @@ class StyleAuditor:
         deduplicated = []
         
         for v in violations:
-            # Create unique key based on normalized text and span indices
             text_normalized = self._normalize_text(v.get('text', ''))
             key = (text_normalized, v.get('start_index'), v.get('end_index'), v.get('paragraph', ''))
             
-            if key not in seen and text_normalized:  # Skip empty violations
+            if key not in seen and text_normalized:
                 seen.add(key)
                 deduplicated.append(v)
         
@@ -613,8 +648,3 @@ class StyleAuditor:
             return lower_idx, lower_idx + len(snippet)
 
         return idx, idx + len(snippet)
-
-if __name__ == "__main__":
-    auditor = StyleAuditor()
-    test_text = "The government needs to do more for Aboriginal housing."
-    print(json.dumps(auditor.check_text(test_text), indent=2))

@@ -1,0 +1,932 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+
+	type Tab = 'create' | 'browse' | 'run';
+	
+	let activeTab = $state<Tab>('create');
+	
+	// Create tab state
+	let createLabel = $state('');
+	let createText = $state('');
+	let createMethod = $state<'manual' | 'article' | 'synthetic'>('manual');
+	let createNotes = $state('');
+	let expectedViolations = $state<Array<{ rule: string; text: string; reason: string }>>([]);
+	let newViolation = $state({ rule: '', text: '', reason: '', link: '' });
+	let createLoading = $state(false);
+	let createError = $state('');
+	let createSuccess = $state('');
+	
+	// Article generation state
+	let articleUrl = $state('');
+	
+	// Synthetic generation state
+	let syntheticCount = $state(5);
+	
+	// Generated test preview state
+	let generatedTests = $state<Array<{ label: string; text: string; expected_violations: any[] }>>([]);
+	let showPreview = $state(false);
+	
+	// Browse tab state
+	let tests = $state<Array<any>>([]);
+	let browseLoading = $state(false);
+	let browseError = $state('');
+	let browsePage = $state(1);
+	let browseTotal = $state(0);
+	let browseSearch = $state('');
+	let browseMethod = $state<string>('');
+	
+	// Run tab state
+	let selectedTestId = $state<string>('');
+	let selectedTest = $state<any>(null);
+	let runLoading = $state(false);
+	let runError = $state('');
+	let runResult = $state<any>(null);
+	
+	// Tuning parameters
+	let modelName = $state('models/gemini-1.5-flash');
+	let temperature = $state(0.1);
+	let initialRetrievalCount = $state(75);
+	let finalTopK = $state(25);
+	let rerankScoreThreshold = $state(0.10);
+	let aggregatedRuleLimit = $state(40);
+	let minSentenceLength = $state(5);
+	let maxAgentIterations = $state(3);
+	let confidenceThreshold = $state(10.0);
+	
+	const API_BASE = 'http://localhost:8000';
+	
+	onMount(() => {
+		loadTests();
+	});
+	
+	// Create tab functions
+	function addViolation() {
+		if (newViolation.rule && newViolation.text && newViolation.link) {
+			expectedViolations.push({ ...newViolation });
+			newViolation = { rule: '', text: '', reason: '', link: '' };
+		}
+	}
+	
+	function removeViolation(index: number) {
+		expectedViolations.splice(index, 1);
+	}
+	
+	async function generateFromArticle() {
+		if (!articleUrl || !articleUrl.match(/^https?:\/\/(www\.)?cbc\.ca\/.+/)) {
+			createError = 'Please enter a valid CBC article URL (e.g., https://www.cbc.ca/news/...)';
+			return;
+		}
+		
+		createLoading = true;
+		createError = '';
+		
+		try {
+			// Call the existing test generator with the article URL
+			const response = await fetch(`${API_BASE}/api/generate-tests`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					article_url: articleUrl,
+					count: 1
+				})
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to generate test from article');
+			}
+			
+			const data = await response.json();
+			
+			// Show preview with editable fields
+			if (data.tests && data.tests.length > 0) {
+				const test = data.tests[0];
+				createLabel = test.label || 'Article-based test';
+				createText = test.text || '';
+				expectedViolations = test.expected_violations || [];
+				showPreview = true;
+			}
+		} catch (err) {
+			createError = err instanceof Error ? err.message : 'Failed to generate from article';
+		} finally {
+			createLoading = false;
+		}
+	}
+	
+	async function generateSynthetic() {
+		createLoading = true;
+		createError = '';
+		
+		try {
+			// Call the existing test generator for synthetic tests
+			const response = await fetch(`${API_BASE}/api/generate-tests`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					count: syntheticCount,
+					method: 'synthetic'
+				})
+			});
+			
+			if (!response.ok) {
+				throw new Error('Failed to generate synthetic tests');
+			}
+			
+			const data = await response.json();
+			generatedTests = data.tests || [];
+			showPreview = true;
+		} catch (err) {
+			createError = err instanceof Error ? err.message : 'Failed to generate synthetic tests';
+		} finally {
+			createLoading = false;
+		}
+	}
+	
+	async function saveGeneratedTest(test: any) {
+		try {
+			const response = await fetch(`${API_BASE}/api/tests`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					label: test.label,
+					text: test.text,
+					expected_violations: test.expected_violations,
+					generation_method: createMethod,
+					notes: createNotes || null
+				})
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.detail || 'Failed to save test');
+			}
+			
+			// Remove from generated list
+			generatedTests = generatedTests.filter(t => t !== test);
+			
+			if (generatedTests.length === 0) {
+				showPreview = false;
+				createSuccess = 'All tests saved successfully!';
+				resetForm();
+				await loadTests();
+			}
+		} catch (err) {
+			createError = err instanceof Error ? err.message : 'Failed to save test';
+		}
+	}
+	
+	async function createTest() {
+		createLoading = true;
+		createError = '';
+		createSuccess = '';
+		
+		try {
+			const response = await fetch(`${API_BASE}/api/tests`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					label: createLabel,
+					text: createText,
+					expected_violations: expectedViolations,
+					generation_method: createMethod,
+					notes: createNotes || null
+				})
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.detail || 'Failed to create test');
+			}
+			
+			createSuccess = 'Test created successfully!';
+			resetForm();
+			
+			// Reload tests list
+			await loadTests();
+		} catch (err) {
+			createError = err instanceof Error ? err.message : 'Failed to create test';
+		} finally {
+			createLoading = false;
+		}
+	}
+	
+	function resetForm() {
+		createLabel = '';
+		createText = '';
+		createNotes = '';
+		expectedViolations = [];
+		articleUrl = '';
+		syntheticCount = 5;
+		showPreview = false;
+		generatedTests = [];
+	}
+	
+	// Browse tab functions
+	async function loadTests() {
+		browseLoading = true;
+		browseError = '';
+		
+		try {
+			const params = new URLSearchParams({
+				page: browsePage.toString(),
+				page_size: '20'
+			});
+			
+			if (browseSearch) params.append('search', browseSearch);
+			if (browseMethod) params.append('generation_method', browseMethod);
+			
+			const response = await fetch(`${API_BASE}/api/tests?${params}`);
+			
+			if (!response.ok) throw new Error('Failed to load tests');
+			
+			const data = await response.json();
+			tests = data.tests;
+			browseTotal = data.total;
+		} catch (err) {
+			browseError = err instanceof Error ? err.message : 'Failed to load tests';
+		} finally {
+			browseLoading = false;
+		}
+	}
+	
+	async function deleteTest(id: string) {
+		if (!confirm('Are you sure you want to delete this test?')) return;
+		
+		try {
+			const response = await fetch(`${API_BASE}/api/tests/${id}`, {
+				method: 'DELETE'
+			});
+			
+			if (!response.ok) throw new Error('Failed to delete test');
+			
+			await loadTests();
+		} catch (err) {
+			alert(err instanceof Error ? err.message : 'Failed to delete test');
+		}
+	}
+	
+	function selectTestForRun(test: any) {
+		selectedTest = test;
+		selectedTestId = test.id;
+		activeTab = 'run';
+	}
+	
+	// Run tab functions
+	async function runTest() {
+		if (!selectedTestId) return;
+		
+		runLoading = true;
+		runError = '';
+		runResult = null;
+		
+		try {
+			const response = await fetch(`${API_BASE}/api/tests/${selectedTestId}/run`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					model_name: modelName,
+					temperature,
+					initial_retrieval_count: initialRetrievalCount,
+					final_top_k: finalTopK,
+					rerank_score_threshold: rerankScoreThreshold,
+					aggregated_rule_limit: aggregatedRuleLimit,
+					min_sentence_length: minSentenceLength,
+					max_agent_iterations: maxAgentIterations,
+					confidence_threshold: confidenceThreshold
+				})
+			});
+			
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.detail || 'Failed to run test');
+			}
+			
+			runResult = await response.json();
+		} catch (err) {
+			runError = err instanceof Error ? err.message : 'Failed to run test';
+		} finally {
+			runLoading = false;
+		}
+	}
+	
+	async function loadTestForRun() {
+		if (!selectedTestId) return;
+		
+		try {
+			const response = await fetch(`${API_BASE}/api/tests/${selectedTestId}`);
+			if (!response.ok) throw new Error('Failed to load test');
+			selectedTest = await response.json();
+		} catch (err) {
+			runError = err instanceof Error ? err.message : 'Failed to load test';
+		}
+	}
+	
+	$effect(() => {
+		if (selectedTestId && !selectedTest) {
+			loadTestForRun();
+		}
+	});
+</script>
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+	<div class="max-w-7xl mx-auto">
+		<!-- Header -->
+		<div class="mb-8">
+			<h1 class="text-4xl font-bold text-gray-900 mb-2">Test Management</h1>
+			<p class="text-gray-600">Create, browse, and run style checker tests</p>
+			<a href="/" class="text-indigo-600 hover:text-indigo-800 text-sm mt-2 inline-block">← Back to Auditor</a>
+		</div>
+
+		<!-- Tabs -->
+		<div class="bg-white rounded-lg shadow-lg mb-6">
+			<div class="border-b border-gray-200">
+				<nav class="flex -mb-px">
+					<button
+						onclick={() => activeTab = 'create'}
+						class="px-6 py-4 text-sm font-medium border-b-2 {activeTab === 'create' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					>
+						Create Test
+					</button>
+					<button
+						onclick={() => activeTab = 'browse'}
+						class="px-6 py-4 text-sm font-medium border-b-2 {activeTab === 'browse' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					>
+						Browse Tests
+					</button>
+					<button
+						onclick={() => activeTab = 'run'}
+						class="px-6 py-4 text-sm font-medium border-b-2 {activeTab === 'run' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}"
+					>
+						Run Test
+					</button>
+				</nav>
+			</div>
+
+			<!-- Tab Content -->
+			<div class="p-6">
+				{#if activeTab === 'create'}
+					<!-- Create Test Tab -->
+					<div class="space-y-4">
+						<div>
+							<label class="block text-sm font-semibold text-gray-700 mb-2">Generation Method</label>
+							<select
+								bind:value={createMethod}
+								onchange={() => { resetForm(); }}
+								class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+								disabled={createLoading}
+							>
+								<option value="manual">Manual Entry</option>
+								<option value="article">From CBC Article</option>
+								<option value="synthetic">Generate Synthetic</option>
+							</select>
+						</div>
+
+						{#if createMethod === 'manual'}
+							<!-- Manual Entry Form -->
+							{#if !showPreview}
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Test Label</label>
+									<input
+										type="text"
+										bind:value={createLabel}
+										placeholder="e.g., Cabinet capitalization test"
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+										disabled={createLoading}
+									/>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Test Text</label>
+									<textarea
+										bind:value={createText}
+										placeholder="Enter the text to test..."
+										rows="6"
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+										disabled={createLoading}
+									></textarea>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Expected Violations</label>
+									
+									<div class="space-y-3 mb-3">
+										{#each expectedViolations as violation, i}
+											<div class="bg-gray-50 p-3 rounded-lg flex items-start justify-between">
+												<div class="flex-1">
+													<div class="font-semibold text-sm text-gray-900">{violation.rule}</div>
+													<div class="text-sm text-gray-600 mt-1">"{violation.text}"</div>
+													{#if violation.reason}
+														<div class="text-xs text-gray-500 mt-1">{violation.reason}</div>
+													{/if}
+													{#if violation.link}
+														<a href={violation.link} target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 mt-1 inline-block">
+															View Rule →
+														</a>
+													{/if}
+												</div>
+												<button
+													onclick={() => removeViolation(i)}
+													class="ml-2 text-red-600 hover:text-red-800 text-sm"
+												>
+													Remove
+												</button>
+											</div>
+										{/each}
+									</div>
+
+									<div class="border border-gray-200 rounded-lg p-4 space-y-3">
+										<input
+											type="text"
+											bind:value={newViolation.rule}
+											placeholder="Rule name"
+											class="w-full p-2 border border-gray-300 rounded"
+										/>
+										<input
+											type="text"
+											bind:value={newViolation.text}
+											placeholder="Violating text snippet"
+											class="w-full p-2 border border-gray-300 rounded"
+										/>
+									<input
+										type="text"
+										bind:value={newViolation.reason}
+										placeholder="Reason (optional)"
+										class="w-full p-2 border border-gray-300 rounded"
+									/>
+									<input
+										type="url"
+										bind:value={newViolation.link}
+										placeholder="Link to rule (required)"
+										required
+										class="w-full p-2 border border-gray-300 rounded"
+									/>
+									<button
+											onclick={addViolation}
+											class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded"
+										>
+											Add Violation
+										</button>
+									</div>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Notes (Optional)</label>
+									<textarea
+										bind:value={createNotes}
+										placeholder="Additional notes..."
+										rows="3"
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+										disabled={createLoading}
+									></textarea>
+								</div>
+
+								<button
+									onclick={createTest}
+									disabled={createLoading || !createLabel || !createText}
+									class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg"
+								>
+									{createLoading ? 'Creating...' : 'Create Test'}
+								</button>
+							{/if}
+
+						{:else if createMethod === 'article'}
+							<!-- Article Generation Form -->
+							{#if !showPreview}
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">CBC Article URL</label>
+									<input
+										type="url"
+										bind:value={articleUrl}
+										placeholder="https://www.cbc.ca/news/..."
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+										disabled={createLoading}
+									/>
+									<p class="text-xs text-gray-500 mt-1">Enter a valid CBC article URL</p>
+								</div>
+
+								<button
+									onclick={generateFromArticle}
+									disabled={createLoading || !articleUrl}
+									class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg"
+								>
+									{createLoading ? 'Generating...' : 'Generate Test from Article'}
+								</button>
+							{:else}
+								<!-- Editable Preview for Article-Generated Test -->
+								<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+									<h3 class="font-bold text-blue-900 mb-2">Generated Test - Review and Edit</h3>
+									<p class="text-sm text-blue-700">Review and modify the generated test before saving</p>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Test Label</label>
+									<input
+										type="text"
+										bind:value={createLabel}
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+									/>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Test Text</label>
+									<textarea
+										bind:value={createText}
+										rows="6"
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+									></textarea>
+								</div>
+
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Expected Violations</label>
+									<div class="space-y-3">
+										{#each expectedViolations as violation, i}
+											<div class="bg-gray-50 p-3 rounded-lg">
+												<input
+													type="text"
+													bind:value={violation.rule}
+													placeholder="Rule name"
+													class="w-full p-2 border border-gray-300 rounded mb-2"
+												/>
+												<input
+													type="text"
+													bind:value={violation.text}
+													placeholder="Violating text"
+													class="w-full p-2 border border-gray-300 rounded mb-2"
+												/>
+												<input
+													type="text"
+													bind:value={violation.reason}
+													placeholder="Reason"
+													class="w-full p-2 border border-gray-300 rounded mb-2"
+												/>
+												<input
+													type="url"
+													bind:value={violation.link}
+													placeholder="Link to rule"
+													class="w-full p-2 border border-gray-300 rounded mb-2"
+												/>
+												<button
+													onclick={() => removeViolation(i)}
+													class="text-red-600 hover:text-red-800 text-sm"
+												>
+													Remove
+												</button>
+											</div>
+										{/each}
+									</div>
+								</div>
+
+								<div class="flex gap-3">
+									<button
+										onclick={createTest}
+										class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg"
+									>
+										Save Test
+									</button>
+									<button
+										onclick={resetForm}
+										class="px-6 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg"
+									>
+										Cancel
+									</button>
+								</div>
+							{/if}
+
+						{:else if createMethod === 'synthetic'}
+							<!-- Synthetic Generation Form -->
+							{#if !showPreview}
+								<div>
+									<label class="block text-sm font-semibold text-gray-700 mb-2">Number of Tests to Generate</label>
+									<input
+										type="number"
+										bind:value={syntheticCount}
+										min="1"
+										max="20"
+										class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+										disabled={createLoading}
+									/>
+									<p class="text-xs text-gray-500 mt-1">Generate between 1 and 20 synthetic tests</p>
+								</div>
+
+								<button
+									onclick={generateSynthetic}
+									disabled={createLoading}
+									class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg"
+								>
+									{createLoading ? 'Generating...' : `Generate ${syntheticCount} Synthetic Test${syntheticCount > 1 ? 's' : ''}`}
+								</button>
+							{:else}
+								<!-- Preview Generated Tests -->
+								<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+									<h3 class="font-bold text-blue-900 mb-2">Generated Tests - Review and Save</h3>
+									<p class="text-sm text-blue-700">{generatedTests.length} test(s) generated. Review and save individually.</p>
+								</div>
+
+								<div class="space-y-4">
+									{#each generatedTests as test, idx}
+										<div class="border border-gray-200 rounded-lg p-4 bg-white">
+											<h4 class="font-semibold text-gray-900 mb-3">Test {idx + 1}</h4>
+											
+											<div class="space-y-3">
+												<div>
+													<label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
+													<input
+														type="text"
+														bind:value={test.label}
+														class="w-full p-2 border border-gray-300 rounded"
+													/>
+												</div>
+
+												<div>
+													<label class="block text-xs font-medium text-gray-600 mb-1">Text</label>
+													<textarea
+														bind:value={test.text}
+														rows="3"
+														class="w-full p-2 border border-gray-300 rounded text-sm"
+													></textarea>
+												</div>
+
+												<div>
+													<label class="block text-xs font-medium text-gray-600 mb-1">Expected Violations</label>
+													<div class="space-y-2">
+														{#each test.expected_violations as violation}
+															<div class="bg-gray-50 p-3 rounded text-sm border border-gray-200">
+																<div class="font-semibold text-gray-900 mb-1">{violation.rule}</div>
+																<div class="text-gray-600 mb-1">"{violation.text}"</div>
+																{#if violation.reason}
+																	<div class="text-xs text-gray-500 mb-1">{violation.reason}</div>
+																{/if}
+																{#if violation.link}
+																	<a href={violation.link} target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 hover:text-indigo-800 inline-block">
+																		View Rule →
+																	</a>
+																{/if}
+															</div>
+														{/each}
+													</div>
+												</div>
+
+												<button
+													onclick={() => saveGeneratedTest(test)}
+													class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded"
+												>
+													Save This Test
+												</button>
+											</div>
+										</div>
+									{/each}
+
+									<button
+										onclick={resetForm}
+										class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded"
+									>
+										Cancel All
+									</button>
+								</div>
+							{/if}
+						{/if}
+
+						{#if createError}
+							<div class="p-4 bg-red-100 text-red-800 rounded-lg">{createError}</div>
+						{/if}
+						{#if createSuccess}
+							<div class="p-4 bg-green-100 text-green-800 rounded-lg">{createSuccess}</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'browse'}
+					<!-- Browse Tests Tab -->
+					<div class="space-y-4">
+						<div class="flex gap-4">
+							<input
+								type="text"
+								bind:value={browseSearch}
+								onchange={loadTests}
+								placeholder="Search tests..."
+								class="flex-1 p-3 border border-gray-300 rounded-lg"
+							/>
+							<select
+								bind:value={browseMethod}
+								onchange={loadTests}
+								class="p-3 border border-gray-300 rounded-lg"
+							>
+								<option value="">All Methods</option>
+								<option value="manual">Manual</option>
+								<option value="article">From Article</option>
+								<option value="synthetic">Synthetic</option>
+							</select>
+							<button
+								onclick={loadTests}
+								class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 rounded-lg"
+							>
+								Search
+							</button>
+						</div>
+
+						{#if browseLoading}
+							<div class="text-center py-8">Loading tests...</div>
+						{:else if browseError}
+							<div class="p-4 bg-red-100 text-red-800 rounded-lg">{browseError}</div>
+						{:else if tests.length === 0}
+							<div class="text-center py-8 text-gray-500">No tests found</div>
+						{:else}
+							<div class="space-y-3">
+								{#each tests as test}
+									<div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+										<div class="flex items-start justify-between">
+											<div class="flex-1">
+												<h3 class="font-bold text-gray-900">{test.label}</h3>
+												<p class="text-sm text-gray-600 mt-1">{test.text.substring(0, 150)}...</p>
+												<div class="flex gap-4 mt-2 text-xs text-gray-500">
+													<span>Method: {test.generation_method}</span>
+													<span>Violations: {test.expected_violations.length}</span>
+													<span>{new Date(test.created_at).toLocaleDateString()}</span>
+												</div>
+											</div>
+											<div class="flex gap-2 ml-4">
+												<button
+													onclick={() => selectTestForRun(test)}
+													class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded"
+												>
+													Run
+												</button>
+												<button
+													onclick={() => deleteTest(test.id)}
+													class="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded"
+												>
+													Delete
+												</button>
+											</div>
+										</div>
+									</div>
+								{/each}
+							</div>
+
+							<div class="flex justify-between items-center mt-4">
+								<div class="text-sm text-gray-600">
+									Showing {tests.length} of {browseTotal} tests
+								</div>
+								<div class="flex gap-2">
+									<button
+										onclick={() => { browsePage--; loadTests(); }}
+										disabled={browsePage === 1}
+										class="px-4 py-2 border border-gray-300 rounded disabled:opacity-50"
+									>
+										Previous
+									</button>
+									<button
+										onclick={() => { browsePage++; loadTests(); }}
+										disabled={browsePage * 20 >= browseTotal}
+										class="px-4 py-2 border border-gray-300 rounded disabled:opacity-50"
+									>
+										Next
+									</button>
+								</div>
+							</div>
+						{/if}
+					</div>
+
+				{:else if activeTab === 'run'}
+					<!-- Run Test Tab -->
+					<div class="space-y-6">
+						{#if !selectedTest}
+							<div class="text-center py-8 text-gray-500">
+								Select a test from the Browse tab to run it
+							</div>
+						{:else}
+							<div class="bg-gray-50 p-4 rounded-lg">
+								<h3 class="font-bold text-gray-900 mb-2">{selectedTest.label}</h3>
+								<p class="text-sm text-gray-700">{selectedTest.text}</p>
+								<div class="mt-2 text-xs text-gray-500">
+									Expected violations: {selectedTest.expected_violations.length}
+								</div>
+							</div>
+
+							<div class="border-t border-gray-200 pt-6">
+								<h3 class="font-bold text-gray-900 mb-4">Tuning Parameters</h3>
+								<div class="grid grid-cols-2 gap-4">
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Model</label>
+										<select bind:value={modelName} class="w-full p-2 border border-gray-300 rounded">
+											<option value="models/gemini-1.5-flash">Gemini 1.5 Flash</option>
+											<option value="models/gemini-1.5-pro">Gemini 1.5 Pro</option>
+											<option value="models/gemini-2.0-flash-thinking-exp">Gemini 2.0 Thinking</option>
+										</select>
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Temperature: {temperature}</label>
+										<input type="range" bind:value={temperature} min="0" max="2" step="0.1" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Initial Retrieval: {initialRetrievalCount}</label>
+										<input type="range" bind:value={initialRetrievalCount} min="10" max="200" step="5" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Final Top K: {finalTopK}</label>
+										<input type="range" bind:value={finalTopK} min="5" max="100" step="5" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Rerank Threshold: {rerankScoreThreshold.toFixed(2)}</label>
+										<input type="range" bind:value={rerankScoreThreshold} min="0" max="1" step="0.05" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Rule Limit: {aggregatedRuleLimit}</label>
+										<input type="range" bind:value={aggregatedRuleLimit} min="10" max="100" step="5" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Min Sentence Length: {minSentenceLength}</label>
+										<input type="range" bind:value={minSentenceLength} min="1" max="50" step="1" class="w-full" />
+									</div>
+									<div>
+										<label class="block text-sm font-medium text-gray-700 mb-1">Max Iterations: {maxAgentIterations}</label>
+										<input type="range" bind:value={maxAgentIterations} min="1" max="10" step="1" class="w-full" />
+									</div>
+								</div>
+							</div>
+
+							<button
+								onclick={runTest}
+								disabled={runLoading}
+								class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg"
+							>
+								{runLoading ? 'Running Test...' : 'Run Test'}
+							</button>
+
+							{#if runError}
+								<div class="p-4 bg-red-100 text-red-800 rounded-lg">{runError}</div>
+							{/if}
+
+							{#if runResult}
+								<div class="space-y-4">
+									<div class="bg-white border border-gray-200 rounded-lg p-6">
+										<h3 class="font-bold text-gray-900 mb-4">Test Results</h3>
+										
+										<div class="grid grid-cols-4 gap-4 mb-6">
+											<div class="text-center">
+												<div class="text-3xl font-bold text-green-600">{runResult.metrics.true_positives}</div>
+												<div class="text-sm text-gray-600">True Positives</div>
+											</div>
+											<div class="text-center">
+												<div class="text-3xl font-bold text-red-600">{runResult.metrics.false_positives}</div>
+												<div class="text-sm text-gray-600">False Positives</div>
+											</div>
+											<div class="text-center">
+												<div class="text-3xl font-bold text-orange-600">{runResult.metrics.false_negatives}</div>
+												<div class="text-sm text-gray-600">False Negatives</div>
+											</div>
+											<div class="text-center">
+												<div class="text-3xl font-bold text-blue-600">{runResult.metrics.true_negatives}</div>
+												<div class="text-sm text-gray-600">True Negatives</div>
+											</div>
+										</div>
+
+										<div class="grid grid-cols-3 gap-4 border-t border-gray-200 pt-4">
+											<div class="text-center">
+												<div class="text-2xl font-bold text-indigo-600">{runResult.metrics.precision?.toFixed(3) || 'N/A'}</div>
+												<div class="text-sm text-gray-600">Precision</div>
+											</div>
+											<div class="text-center">
+												<div class="text-2xl font-bold text-indigo-600">{runResult.metrics.recall?.toFixed(3) || 'N/A'}</div>
+												<div class="text-sm text-gray-600">Recall</div>
+											</div>
+											<div class="text-center">
+												<div class="text-2xl font-bold text-indigo-600">{runResult.metrics.f1_score?.toFixed(3) || 'N/A'}</div>
+												<div class="text-sm text-gray-600">F1 Score</div>
+											</div>
+										</div>
+
+										<div class="mt-4 text-xs text-gray-500">
+											Execution time: {runResult.execution_time_seconds.toFixed(2)}s
+										</div>
+									</div>
+
+									{#if runResult.detected_violations.length > 0}
+										<div class="bg-white border border-gray-200 rounded-lg p-6">
+											<h3 class="font-bold text-gray-900 mb-4">Detected Violations ({runResult.detected_violations.length})</h3>
+											<div class="space-y-3">
+												{#each runResult.detected_violations as violation}
+													<div class="border-l-4 border-red-500 pl-4">
+														<div class="font-semibold text-sm">{violation.rule}</div>
+														<div class="text-sm text-gray-600 mt-1">"{violation.text}"</div>
+														<div class="text-xs text-gray-500 mt-1">{violation.reason}</div>
+													</div>
+												{/each}
+											</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
+						{/if}
+					</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	:global(body) {
+		margin: 0;
+		padding: 0;
+		font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	}
+</style>

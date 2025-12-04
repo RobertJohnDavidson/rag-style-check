@@ -52,7 +52,7 @@ PROJECT_NAME = os.getenv("PROJECT_NAME") # Kept for backward compatibility with 
 # Tuning
 INITIAL_RETRIEVAL_COUNT = 75  # Increased to cast wider net
 FINAL_TOP_K = 25              # Increased to give more context per sentence
-RERANK_SCORE_THRESHOLD = 0.10  # Lowered from 0.15 to be even less strict
+RERAN_SCORE_THRESHOLD = 0.10  # Lowered from 0.15 to be even less strict
 AGGREGATED_RULE_LIMIT = 40    # Increased to allow more comprehensive coverage
 MIN_SENTENCE_LENGTH = 5
 MAX_AGENT_ITERATIONS = 3  # Max thinking cycles for agent refinement
@@ -117,7 +117,7 @@ Settings.llm = GoogleGenAI(
 nlp = English()
 nlp.add_pipe("sentencizer")
 
-class StyleAuditor:
+class AltStyleAuditor:
     def __init__(self):
         print(f"🔌 Connecting to Cloud SQL Instance: {INSTANCE_NAME}...")
         
@@ -137,8 +137,6 @@ class StyleAuditor:
             async_engine=self.async_engine,
             table_name=TABLE_NAME,
             embed_dim=EMBED_DIM, # 768
-            hybrid_search=True,
-            text_search_config="english",
             hnsw_kwargs={
                 "hnsw_m": 24,                # Denser graph (Standard is 16)
                 "hnsw_ef_construction": 512, # Deep index build (Standard is 64)
@@ -154,9 +152,7 @@ class StyleAuditor:
         
         self.retriever = VectorIndexRetriever(
             index=self.index,
-            similarity_top_k=INITIAL_RETRIEVAL_COUNT,
-            vector_store_query_mode="hybrid",
-            sparse_top_k=10
+            similarity_top_k=INITIAL_RETRIEVAL_COUNT
         )
 
         if VertexAIRerank:
@@ -268,7 +264,7 @@ class StyleAuditor:
             # If agent is confident, stop early
             # BUT: Don't trust confidence if we have very few rules
             if is_confident and not needs_more_context:
-                if len(contexts) < 10:  # Increased from 10 - require more rules for confidence
+                if len(contexts) < 15:  # Increased from 10 - require more rules for confidence
                     print(f"⚠️  Agent claims confidence but only {len(contexts)} rules available. Requesting more context.")
                     is_confident = False
                     needs_more_context = True
@@ -311,7 +307,7 @@ class StyleAuditor:
         """Retrieve additional rule contexts based on agent's questions."""
         aggregated = {}
         
-        for query in queries:
+        for query in queries[:3]:  # Limit to 3 additional queries
             # Expand query with synonyms/variations for better matching
             expanded_queries = [query]
             
@@ -324,7 +320,7 @@ class StyleAuditor:
                 expanded_queries.extend(["uppercase", "lowercase", "title case"])
             
             # Retrieve with all query variations
-            for q in expanded_queries:
+            for q in expanded_queries[:2]:  # Limit to avoid explosion
                 nodes = self.retriever.retrieve(q)
                 
                 if nodes and self.reranker:
@@ -387,11 +383,11 @@ class StyleAuditor:
             paragraph_text = " ".join(sentences)
             # Find capitalized words, proper nouns, and important terms
             keywords = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', paragraph_text)
-            keywords = list(set(keywords))
+            keywords = list(set(keywords))[:5]  # Unique, limit to 5
             
             for keyword in keywords:
                 nodes = self._retrieve_nodes(keyword)
-                for node in nodes:
+                for node in nodes[:3]:  # Limit per keyword
                     term = node.metadata.get('term', 'Untitled Rule')
                     key = (term, node.metadata.get('url', ''))
                     score = getattr(node, 'score', 0) * 0.8  # Slightly lower priority
@@ -431,7 +427,7 @@ class StyleAuditor:
     def _filter_nodes(self, nodes):
         if not nodes:
             return []
-        return [node for node in nodes if getattr(node, 'score', 0) >= RERANK_SCORE_THRESHOLD]
+        return [node for node in nodes if getattr(node, 'score', 0) >= RERAN_SCORE_THRESHOLD]
 
     def _build_paragraph_prompt(self, paragraph, contexts, current_violations=None, iteration=0):
         if contexts:
@@ -615,6 +611,6 @@ class StyleAuditor:
         return idx, idx + len(snippet)
 
 if __name__ == "__main__":
-    auditor = StyleAuditor()
+    auditor = AltStyleAuditor()
     test_text = "The government needs to do more for Aboriginal housing."
     print(json.dumps(auditor.check_text(test_text), indent=2))
