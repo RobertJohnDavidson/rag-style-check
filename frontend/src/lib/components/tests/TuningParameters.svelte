@@ -79,7 +79,7 @@
 		<Slider
 			label="Rule Limit"
 			bind:value={parameters.aggregated_rule_limit}
-			min={10}
+			min={15}
 			max={100}
 			step={5}
 			{disabled}
