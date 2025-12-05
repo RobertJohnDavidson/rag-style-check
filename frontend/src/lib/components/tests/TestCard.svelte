@@ -29,10 +29,34 @@
 		
 		<p class="text-sm text-gray-600 mb-2">{truncatedText}</p>
 		
-		<div class="flex gap-4 text-xs text-gray-500">
-			<span>Violations: {test.expected_violations.length}</span>
-			<span>{formattedDate}</span>
-		</div>
+		<details class="mt-2">
+			<summary class="flex gap-4 text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+				<span>Violations: {test.expected_violations.length}</span>
+				<span>{formattedDate}</span>
+			</summary>
+			<div class="mt-2 pl-4 space-y-2">
+				{#each test.expected_violations as violation}
+					<div class="text-xs border-l-2 border-gray-300 pl-3 py-1">
+						<p class="font-semibold text-gray-700">{violation.rule}</p>
+						<p class="text-gray-600">"{violation.text}"</p>
+						{#if violation.reason}
+							<p class="italic text-gray-500">Reason: {violation.reason}</p>
+						{/if}
+						{#if violation.link}
+							<a 
+								href={violation.link} 
+								target="_blank" 
+								rel="noopener noreferrer" 
+								class="text-indigo-600 hover:text-indigo-800"
+							>
+								View Rule →
+							</a>
+						{/if}
+						
+					</div>
+				{/each}
+			</div>
+		</details>
 		
 		{#if test.notes}
 			<p class="text-xs text-gray-500 mt-2 italic">{test.notes}</p>
