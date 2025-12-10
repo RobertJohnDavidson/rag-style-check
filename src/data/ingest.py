@@ -1,7 +1,7 @@
 import os
 import json
 import glob
-import asyncio # Required for async cleanup
+import asyncio 
 import pickle
 import hashlib
 from pathlib import Path
@@ -19,7 +19,7 @@ from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 # Load environment variables
 load_dotenv()
 
-# --- CONFIGURATION ---
+# --- CONFIGURATION (INLINED) ---
 PROJECT_ID = os.getenv("PROJECT_NAME")
 REGION = os.getenv("DB_REGION")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME")
@@ -31,9 +31,14 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
 EMBED_DIM = 768
 CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./cache/embeddings")
 
+# Inline Constants
+RULE_TAGS = [
+    "Capitalization", "Punctuation", "Spelling", "Grammar", "Numbers",
+    "Dates & Time", "Geography", "Titles & Ranks", "Abbreviations",
+    "Formatting", "Usage & Diction", "Proper Names", "Bias & Sensitivity"
+]
+
 # --- GLOBAL CONNECTOR ---
-# We initialize the connector once to be shared across both engines.
-# This prevents opening too many background threads.
 connector = Connector()
 
 Settings.embed_model = GoogleGenAIEmbedding(
@@ -43,7 +48,6 @@ Settings.embed_model = GoogleGenAIEmbedding(
     embedding_config=EmbedContentConfig(
         output_dimensionality=EMBED_DIM  # 768
     )
-
 )
 
 def get_ip_type():
@@ -51,7 +55,7 @@ def get_ip_type():
         return IPTypes.PRIVATE
     return IPTypes.PUBLIC
 
-# 1. Synchronous Connection Function (For standard Sync Engine)
+# 1. Synchronous Connection Function
 def get_sync_conn():
     return connector.connect(
         f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
@@ -62,11 +66,11 @@ def get_sync_conn():
         ip_type=get_ip_type()
     )
 
-# 2. Asynchronous Connection Function (For Async Engine)
+# 2. Asynchronous Connection Function
 async def get_async_conn():
     return await connector.connect_async(
         f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
-        "asyncpg", # Must use asyncpg driver
+        "asyncpg",
         user=DB_USER,
         db=DB_NAME,
         enable_iam_auth=True,
@@ -83,30 +87,48 @@ def create_node_from_entry(entry):
     context = entry.get("context_tag", "General")
     entry_type = entry.get("type", "term")
     is_spelling = entry.get("is_spelling_only", False)
+    # Get tags, defaulting to empty list if missing
+    tags = entry.get("tags", [])
+    
+    # Validate tags against known list (optional, but good for data hygiene)
+    valid_tags = [t for t in tags if t in RULE_TAGS]
+    tags_str = ", ".join(valid_tags)
 
     if entry_type == "term":
         search_text = (
             f"Rule: {term}. Context: {context}. Definition: {definition}. "
-            f"Negative Triggers: {' '.join(constraints)}." 
+            f"Negative Triggers: {' '.join(constraints)}."
         )
+        if valid_tags:
+            search_text += f" Tags: {tags_str}."
+            
         if is_spelling:
             search_text += f" Strict spelling rule for {term}."
     else:
         search_text = (
             f"Policy Context: {term}. Category: {context}. Guideline: {definition}"
         )
+        if valid_tags:
+            search_text += f" Tags: {tags_str}."
 
     display_text = f"**Rule:** {term}\n**Guideline:** {definition}"
+    if valid_tags:
+        display_text += f"\n**Tags:** {tags_str}"
+        
     if constraints:
         display_text += f"\n**⛔ AVOID:** {', '.join(constraints)}"
 
     node = TextNode(
         text=search_text,
         metadata={
-            "term": term, "url": url, "context": context, "display_text": display_text 
+            "term": term, 
+            "url": url, 
+            "context": context, 
+            "display_text": display_text,
+            "tags": valid_tags # Store as list in metadata
         }
     )
-    node.excluded_embed_metadata_keys = ["term", "url", "context", "display_text"]
+    node.excluded_embed_metadata_keys = ["term", "url", "context", "display_text", "tags"]
     node.excluded_llm_metadata_keys = ["context"] 
     return node
 
@@ -214,7 +236,7 @@ def main():
 
     print(f"🔌 Connecting to Cloud SQL...")
 
-    # 2. Create BOTH Engines
+    # 3. Create Engines & Vector Store
     # Sync Engine (for table creation and standard queries)
     engine = sqlalchemy.create_engine(
         "postgresql+pg8000://",
@@ -227,16 +249,15 @@ def main():
         async_creator=get_async_conn,
     )
 
-    # 3. Initialize PGVectorStore with BOTH engines
+    # Initialize PGVectorStore with BOTH engines
     vector_store = PGVectorStore(
         engine=engine,
         async_engine=async_engine, 
         table_name=TABLE_NAME,
         embed_dim=EMBED_DIM,
         hnsw_kwargs={
-            "hnsw_m": 24,                # Denser graph (Standard is 16)
-            "hnsw_ef_construction": 512, # Deep index build (Standard is 64)
-            "hnsw_ef_search": 100,       # High accuracy default (Standard is 40)
+            "hnsw_m": 24,                
+            "hnsw_ef_construction": 512, 
             "hnsw_dist_method": "vector_cosine_ops",
         },
     )
