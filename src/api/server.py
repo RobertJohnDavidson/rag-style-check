@@ -18,10 +18,12 @@ import os
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
+import nest_asyncio
+nest_asyncio.apply()
 
 # Import Core Components
 from src.config import settings, init_settings
-from src.core.db import get_async_engine, init_vector_store
+from src.core.db import get_async_engine, get_sync_engine, init_vector_store
 from src.core.auditor import StyleAuditor
 from src.core.test_manager import TestManager
 from src.core import test_generator
@@ -44,7 +46,8 @@ from src.api.test_schemas import (
     TestResultListResponse,
     TestUpdateInput,
     ModelListResponse,
-    ModelInfo as TestModelInfo
+    ModelInfo as TestModelInfo,
+    GenerateTestsRequest
 )
 
 from llama_index.llms.google_genai import GoogleGenAI
@@ -63,6 +66,7 @@ async def lifespan(app: FastAPI):
     Initializes DB connection, LLM settings, and the Auditor.
     """
     global auditor, test_manager, db_engine
+    sync_db_engine = None
     
     print("🚀 Starting up Style Checker API...")
     
@@ -77,6 +81,7 @@ async def lifespan(app: FastAPI):
     # 2. Database Connection
     try:
         db_engine = get_async_engine()
+        sync_db_engine = get_sync_engine()
         # Test connection?
         async with db_engine.connect() as conn:
              print("✅ Database connection established.")
@@ -86,10 +91,12 @@ async def lifespan(app: FastAPI):
     # 3. Vector Store & Index
     # For now, we init vector store. 
     # NOTE: LlamaIndex VectorStoreIndex usually needs an initialized store.
-    if db_engine:
+    # 3. Vector Store & Index
+    # For now, we init vector store. 
+    # NOTE: LlamaIndex VectorStoreIndex usually needs an initialized store.
+    if db_engine and sync_db_engine:
         try:
-            vector_store = init_vector_store(db_engine)
-            # We don't construct the full index object here if we don't need to rebuild it.
+            vector_store = init_vector_store(sync_db_engine, db_engine)
             # But the Auditor needs an index or retriever.
             # Let's create the Index wrapper.
             from llama_index.core import VectorStoreIndex
@@ -140,6 +147,8 @@ async def lifespan(app: FastAPI):
     print("🛑 Shutting down...")
     if db_engine:
         await db_engine.dispose()
+    if sync_db_engine:
+        sync_db_engine.dispose()
 
 # Initialize FastAPI app with lifespan
 app = FastAPI(
@@ -296,6 +305,71 @@ async def list_tests(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list tests: {str(e)}")
 
+@app.post("/api/generate-tests", response_model=List[TestRecord])
+async def generate_tests(
+    request: GenerateTestsRequest,
+    auditor_svc: StyleAuditor = Depends(get_auditor_instance),
+    manager: TestManager = Depends(get_test_manager_instance)
+):
+    """
+    Generate synthetic tests or tests from articles.
+    Returns the list of created and saved test records.
+    """
+    try:
+        # Dependencies from Auditor service
+        # Ensure we have the base retriever for retrieval tasks
+        if not hasattr(auditor_svc, 'base_retriever') or not auditor_svc.base_retriever:
+             raise HTTPException(status_code=500, detail="Auditor service not initialized with a retriever.")
+             
+        retriever = auditor_svc.base_retriever
+        pass_reranker = getattr(auditor_svc, 'vertex_reranker', None)
+        
+        generated_data = []
+        
+        if request.method == "synthetic":
+            count = request.count or 3
+            # Call generator
+            generated_data = await test_generator.generate_synthetic_tests(
+                count=count,
+                retriever=retriever,
+                reranker=pass_reranker
+            )
+            
+        elif request.method == "article":
+            if not request.url:
+                raise HTTPException(status_code=400, detail="URL is required for article generation")
+            
+            # Call generator
+            result = await test_generator.generate_test_from_article(
+                url=request.url,
+                retriever=retriever,
+                reranker=pass_reranker
+            )
+            generated_data = [result]
+            
+        else:
+             raise HTTPException(status_code=400, detail="Invalid generation method")
+        
+        # Save generated tests to DB
+        saved_records = []
+        for data in generated_data:
+            test_dict = await manager.create_test(
+                label=data["label"],
+                text=data["text"],
+                expected_violations=data["expected_violations"],
+                generation_method=f"auto-{request.method}",
+                notes=f"Auto-generated on {datetime.now().isoformat()}"
+            )
+            saved_records.append(TestRecord(**test_dict))
+            
+        return saved_records
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to generate tests: {str(e)}")
+
+
 @app.get("/api/tests/{test_id}", response_model=TestRecord)
 async def get_test(
     test_id: UUID,
@@ -394,45 +468,33 @@ async def run_test(
             for v in detected
         ]
         
-        # Match Logic (Simple Fuzzy Match)
-        from difflib import SequenceMatcher
-        def is_text_match(text1: str, text2: str, threshold: float = 0.8) -> bool:
-            if text1 in text2 or text2 in text1: return True
-            ratio = SequenceMatcher(None, text1.lower(), text2.lower()).ratio()
-            return ratio >= threshold
+        # Calculate metrics
+        # Simple exact match for now (can be improved)
+        tp = 0
+        fp = 0
+        fn = 0
         
-        expected = test_record.expected_violations
-        matched_expected = set()
-        matched_detected = set()
+        expected_rules = set(v['link'] for v in test_record.expected_violations if v.get('link'))
+        detected_rules = set(v.source_url for v in detected_violations if v.source_url)
         
-        for i, exp_v in enumerate(expected):
-            for j, det_v in enumerate(detected_violations):
-                if j not in matched_detected and is_text_match(exp_v.get("text", ""), det_v.text):
-                    matched_expected.add(i)
-                    matched_detected.add(j)
-                    break
+        tp = len(expected_rules.intersection(detected_rules))
+        fp = len(detected_rules - expected_rules)
+        fn = len(expected_rules - detected_rules)
         
-        tp = len(matched_expected)
-        fp = len(detected_violations) - len(matched_detected)
-        fn = len(expected) - len(matched_expected)
-        tn = 1 if len(expected) == 0 and len(detected_violations) == 0 else 0
+        tn = 0 # Not applicable for this type of test really
         
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
         
         metrics = TestMetrics(
-            true_positives=tp, false_positives=fp, false_negatives=fn, true_negatives=tn,
-            precision=precision, recall=recall, f1_score=f1_score
-        )
-        
-        # Save Result
-        await manager.save_test_result(
-            test_id=test_id,
-            true_positives=tp, false_positives=fp, false_negatives=fn, true_negatives=tn,
-            precision=precision, recall=recall, f1_score=f1_score,
-            detected_violations=[v.model_dump() for v in detected_violations],
-            tuning_parameters=tuning_params.model_dump() if tuning_params else {}
+            true_positives=tp,
+            false_positives=fp,
+            false_negatives=fn,
+            true_negatives=tn,
+            precision=precision,
+            recall=recall,
+            f1_score=f1
         )
         
         return TestRunResult(
@@ -442,12 +504,11 @@ async def run_test(
             tuning_parameters=tuning_params.model_dump() if tuning_params else {},
             execution_time_seconds=execution_time
         )
-
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to run test: {str(e)}")
-
+    
 @app.get("/api/tests/{test_id}/results", response_model=TestResultListResponse)
 async def get_test_results(
     test_id: UUID,
@@ -493,5 +554,5 @@ async def serve_frontend(full_path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True, loop="asyncio")
 

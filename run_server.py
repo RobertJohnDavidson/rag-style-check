@@ -31,5 +31,6 @@ if __name__ == "__main__":
         host=args.host,
         port=args.port,
         reload=reload,
-        log_level="info"
+        log_level="info",
+        loop="asyncio"
     )

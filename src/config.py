@@ -24,6 +24,12 @@ class AppSettings(BaseModel):
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
     EMBED_DIM: int = 768
     DEFAULT_MODEL: str = os.getenv("MODEL", "models/gemini-1.5-flash")
+    HNSW_KWARGS: dict = {
+        "hnsw_m": 24,
+        "hnsw_ef_construction": 512,
+        "hnsw_ef_search": 40,
+        "hnsw_dist_method": "vector_cosine_ops",
+    }
     
     # Tuning Defaults
     DEFAULT_INITIAL_RETRIEVAL_COUNT: int = 75

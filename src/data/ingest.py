@@ -1,34 +1,26 @@
 import os
 import json
 import glob
-import asyncio 
 import pickle
 import hashlib
 from pathlib import Path
 from google.cloud import storage
-from google.cloud.sql.connector import Connector, IPTypes
-from google.genai.types import EmbedContentConfig
-import sqlalchemy
-from sqlalchemy.ext.asyncio import create_async_engine 
 from dotenv import load_dotenv
-from llama_index.core import VectorStoreIndex, StorageContext, Settings
+from llama_index.core import VectorStoreIndex, StorageContext
 from llama_index.core.schema import TextNode
-from llama_index.vector_stores.postgres import PGVectorStore
-from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+from src.config import settings, init_settings
+from src.core.db import (
+    get_sync_engine,
+    get_async_engine,
+    init_vector_store_for_ingest,
+    setup_tsvector_column,
+)
 
 # Load environment variables
 load_dotenv()
+init_settings()
 
-# --- CONFIGURATION (INLINED) ---
-PROJECT_ID = os.getenv("PROJECT_NAME")
-REGION = os.getenv("DB_REGION")
-INSTANCE_NAME = os.getenv("INSTANCE_NAME")
-DB_NAME = "postgres"
-DB_USER = os.getenv("DB_USER")
-TABLE_NAME = "rag_vectors"
 JSON_DATA_DIR = os.getenv("JSON_DATA_DIR")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "gemini-embedding-001")
-EMBED_DIM = 768
 CACHE_DIR = os.getenv("EMBEDDING_CACHE_DIR", "./cache/embeddings")
 
 # Inline Constants
@@ -37,45 +29,6 @@ RULE_TAGS = [
     "Dates & Time", "Geography", "Titles & Ranks", "Abbreviations",
     "Formatting", "Usage & Diction", "Proper Names", "Bias & Sensitivity"
 ]
-
-# --- GLOBAL CONNECTOR ---
-connector = Connector()
-
-Settings.embed_model = GoogleGenAIEmbedding(
-    model_name=EMBEDDING_MODEL,
-    embed_batch_size=10,
-    vertexai_config={"project": PROJECT_ID, "location": REGION},
-    embedding_config=EmbedContentConfig(
-        output_dimensionality=EMBED_DIM  # 768
-    )
-)
-
-def get_ip_type():
-    if os.getenv("K_SERVICE"):
-        return IPTypes.PRIVATE
-    return IPTypes.PUBLIC
-
-# 1. Synchronous Connection Function
-def get_sync_conn():
-    return connector.connect(
-        f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
-        "pg8000",
-        user=DB_USER,
-        db=DB_NAME,
-        enable_iam_auth=True,
-        ip_type=get_ip_type()
-    )
-
-# 2. Asynchronous Connection Function
-async def get_async_conn():
-    return await connector.connect_async(
-        f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
-        "asyncpg",
-        user=DB_USER,
-        db=DB_NAME,
-        enable_iam_auth=True,
-        ip_type=get_ip_type()
-    )
 
 
 def create_node_from_entry(entry):
@@ -188,7 +141,7 @@ def get_cache_key(nodes):
     for node in nodes:
         content_hash.update(node.text.encode('utf-8'))
         content_hash.update(str(node.metadata).encode('utf-8'))
-    content_hash.update(EMBEDDING_MODEL.encode('utf-8'))
+    content_hash.update(settings.EMBEDDING_MODEL.encode('utf-8'))
     return content_hash.hexdigest()
 
 
@@ -237,31 +190,10 @@ def main():
     print(f"🔌 Connecting to Cloud SQL...")
 
     # 3. Create Engines & Vector Store
-    # Sync Engine (for table creation and standard queries)
-    engine = sqlalchemy.create_engine(
-        "postgresql+pg8000://",
-        creator=get_sync_conn,
-    )
-
-    # Async Engine (for high-speed async ingestion used by LlamaIndex)
-    async_engine = create_async_engine(
-        "postgresql+asyncpg://",
-        async_creator=get_async_conn,
-    )
-
-    # Initialize PGVectorStore with BOTH engines
-    vector_store = PGVectorStore(
-        engine=engine,
-        async_engine=async_engine, 
-        table_name=TABLE_NAME,
-        embed_dim=EMBED_DIM,
-        hnsw_kwargs={
-            "hnsw_m": 24,                
-            "hnsw_ef_construction": 512, 
-            "hnsw_dist_method": "vector_cosine_ops",
-        },
-    )
-    
+    engine = get_sync_engine()
+    async_engine = get_async_engine()
+    vector_store = init_vector_store_for_ingest(engine, async_engine)
+    setup_tsvector_column(engine)
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
     # 4. Ingest (this triggers embedding if not cached)
@@ -279,8 +211,5 @@ def main():
     
     print("🎉 Ingestion Complete.")
     
-    # Cleanup (Optional but good practice)
-    # connector.close() # Can't easily close global in main, but script exit handles it.
-
 if __name__ == "__main__":
     main()

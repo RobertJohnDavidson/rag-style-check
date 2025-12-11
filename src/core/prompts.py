@@ -10,10 +10,12 @@ STYLE_CATEGORIES = (
 )
 
 PROMPT_QUERY_GEN = (
-    "You are an expert Copy Editor for CBC News. Generate {num_queries} specific search queries "
-    "to find style guide rules relevant to the following text. "
+    "You are an expert Copy Editor. Generate {num_queries} specific search queries "
+    "to find style rules relevant to the following text. "
     "Your goal is to identify potential violations in these specific categories:\n"
     f"{STYLE_CATEGORIES}"
+    "Generate queries focusing on the specific terms, capitalization, spelling, or punctuation issues. "
+    "Do NOT include generic phrases like 'style guide' in your queries.\n"
     "Text: {query}"
 )
 

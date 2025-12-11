@@ -98,6 +98,14 @@ class TestUpdateInput(BaseModel):
     notes: Optional[str] = None
 
 
+class GenerateTestsRequest(BaseModel):
+    """Request to generate test cases"""
+    method: str = Field(..., pattern="^(synthetic|article)$", description="Type of generation")
+    count: Optional[int] = Field(3, ge=1, le=10, description="Number of synthetic tests to generate")
+    url: Optional[str] = Field(None, description="URL of CBC article to parse (required for article type)")
+    topic: Optional[str] = Field(None, description="Topic for synthetic generation (optional)")
+
+
 # --- Output Schemas (Response Bodies) ---
 
 class TestRecord(BaseModel):
