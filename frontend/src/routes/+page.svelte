@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 
 	let text = $state('');
 	let violations = $state<Array<{ text: string; rule: string; reason: string; source_url?: string }>>([]);
@@ -17,7 +16,6 @@
 		error = '';
 		violations = [];
 
-		const startTime = performance.now();
 
 		try {
 			const response = await fetch('http://localhost:8000/audit', {
@@ -105,7 +103,11 @@
 
 					<!-- Status Messages -->
 					{#if error}
-						<div class="mt-4 p-4 rounded-lg {error.includes('No style') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+						<div
+							class="mt-4 p-4 rounded-lg {error.includes('No style')
+								? 'bg-green-100 text-green-800'
+								: 'bg-red-100 text-red-800'}"
+						>
 							{error}
 						</div>
 					{/if}
