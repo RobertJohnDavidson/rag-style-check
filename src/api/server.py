@@ -351,7 +351,7 @@ async def generate_tests(
                 label=data["label"],
                 text=data["text"],
                 expected_violations=data["expected_violations"],
-                generation_method=f"auto-{request.method}",
+                generation_method=request.method,
                 notes=f"Auto-generated on {datetime.now().isoformat()}"
             )
             saved_records.append(TestRecord(**test_dict))
