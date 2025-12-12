@@ -7,13 +7,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - PROJECT_NAME=${PROJECT_NAME:-cbc-style-checker}
+      # Point to the mounted ADC file
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/adc.json
     volumes:
       # Mount db for persistence
       - ./db:/app/db
       # Mount .env if exists
       - ./.env:/app/.env:ro
+      # Mount local Application Default Credentials (Standard location)
+      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/config/adc.json:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]

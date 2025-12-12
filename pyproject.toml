@@ -13,7 +13,7 @@ dependencies = [
     "llama-index-vector-stores-postgres",
     "sqlalchemy",
     "cloud-sql-python-connector[pg8000]",
-    "cloud-sql-python-connector[asyncpg]"
+    "cloud-sql-python-connector[asyncpg]",
     "llama-index-embeddings-google-genai",
     "llama-index-llms-google-genai",
     "chromadb",

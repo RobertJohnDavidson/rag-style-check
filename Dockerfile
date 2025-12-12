@@ -5,17 +5,14 @@ FROM oven/bun:latest AS frontend-builder
 
 WORKDIR /app/frontend
 
-
 COPY frontend/package.json ./
-COPY frontend/bun.lockb ./
-COPY frontend/src ./
 
 RUN bun install
 
 # Copy frontend source
 COPY frontend/ ./
 
-# Build frontend with Bun
+# Build frontend
 RUN bun run build
 
 # Stage 2: Python backend
@@ -29,21 +26,19 @@ RUN apt-get update && apt-get install -y \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python dependencies
-COPY requirements.txt pyproject.toml ./
+# Copy Python configuration and source
+COPY pyproject.toml ./
+COPY src/ ./src/
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies and the package itself
+# This uses pyproject.toml (requires src/ to be present for setuptools)
+RUN pip install --no-cache-dir .
 
 # Download spacy model
 RUN python -m spacy download en_core_web_sm
 
-# Copy backend source
-COPY src/ ./src/
+# Copy runner script
 COPY run_server.py ./
-
-# Copy ChromaDB database
-COPY db/ ./db/
 
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
@@ -56,4 +51,4 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8000
 
 # Run the server
-CMD ["python", "run_server.py", "--production", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "python run_server.py --production --host 0.0.0.0 --port ${PORT:-8000}"]

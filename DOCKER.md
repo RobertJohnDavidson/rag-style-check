@@ -48,7 +48,6 @@ bun run dev -- --host 0.0.0.0
 Create a `.env` file in the project root:
 
 ```env
-GOOGLE_API_KEY=your_api_key_here
 PROJECT_NAME=cbc-style-checker
 ```
 
@@ -62,7 +61,6 @@ docker build -t cbc-style-checker .
 docker run -d \
   -p 8000:8000 \
   -v $(pwd)/db:/app/db \
-  -e GOOGLE_API_KEY=your_key \
   --name style-checker \
   cbc-style-checker
 ```
@@ -75,10 +73,8 @@ curl http://localhost:8000/health
 
 ## Volume Mounts
 
-- `./db:/app/db` - ChromaDB database persistence
 - `./.env:/app/.env:ro` - Environment variables (read-only)
 
-## Troubleshooting
 
 ### Check container logs
 ```bash
@@ -111,7 +107,6 @@ gcloud run deploy style-checker \
   --image gcr.io/PROJECT_ID/style-checker \
   --platform managed \
   --region us-central1 \
-  --set-env-vars GOOGLE_API_KEY=your_key
 ```
 
 ### AWS ECS / Azure Container Apps

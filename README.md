@@ -51,7 +51,6 @@ See [DOCKER.md](DOCKER.md) for detailed Docker deployment instructions.
 
 2.  **Create `.env` file**:
     ```ini
-    GOOGLE_API_KEY=your_api_key_here
     PROJECT_NAME=cbc-style-checker
     ```
 
