@@ -2,7 +2,6 @@ llama-index-core
 llama-index-vector-stores-postgres
 llama-index-embeddings-google-genai
 chromadb
-spacy
 python-dotenv
 llama-index-llms-google-genai
 google-cloud-storage

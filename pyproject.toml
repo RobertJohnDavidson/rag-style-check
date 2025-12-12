@@ -17,7 +17,7 @@ dependencies = [
     "llama-index-embeddings-google-genai",
     "llama-index-llms-google-genai",
     "chromadb",
-    "spacy",
+
     "python-dotenv",
     "google-cloud-storage",
     "google-cloud-discoveryengine",

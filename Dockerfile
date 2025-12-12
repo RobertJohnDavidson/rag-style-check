@@ -35,7 +35,8 @@ COPY src/ ./src/
 RUN pip install --no-cache-dir .
 
 # Download spacy model
-RUN python -m spacy download en_core_web_sm
+# Spacy removed
+# RUN python -m spacy download en_core_web_sm
 
 # Copy runner script
 COPY run_server.py ./
