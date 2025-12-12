@@ -57,6 +57,7 @@
 		showPreview = false;
 
 		const response = await apiGenerateTests({ 
+			method: 'synthetic',
 			count: result.data
 		});
 
@@ -132,13 +133,13 @@
 			required
 			autofocus
 		/>
-		
+
 		<p class="text-xs text-gray-500">Generate between 1 and 20 synthetic tests</p>
 
 		<Button
 			variant="primary"
 			onclick={handleGenerate}
-			loading={loading}
+			{loading}
 			disabled={!syntheticCount}
 			class="w-full"
 		>
@@ -154,20 +155,11 @@
 			{#each generatedTests as test, idx (idx)}
 				<div>
 					<h4 class="font-semibold text-gray-900 mb-3">Test {idx + 1}</h4>
-					<TestPreview
-						test={generatedTests[idx]}
-						onSave={() => handleSaveTest(idx)}
-						loading={loading}
-					/>
+					<TestPreview test={generatedTests[idx]} onSave={() => handleSaveTest(idx)} {loading} />
 				</div>
 			{/each}
 
-			<Button
-				variant="secondary"
-				onclick={handleCancelAll}
-				disabled={loading}
-				class="w-full"
-			>
+			<Button variant="secondary" onclick={handleCancelAll} disabled={loading} class="w-full">
 				Cancel All
 			</Button>
 		</div>

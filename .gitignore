@@ -1,6 +1,11 @@
 /data
-/db
 /tests/results_history
-.env
 */__pycache__/
 *.pyc
+/cache/*
+/style_guide_auditor.egg-info
+.venvgit
+.env
+/build
+service-account-key.json
+ingestion_cache.json

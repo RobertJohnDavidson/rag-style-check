@@ -21,18 +21,18 @@ export async function createTest(input: {
 	try {
 		// Validate input
 		const validated = TestInputSchema.parse(input);
-		
+
 		const response = await fetch(`${API_BASE}/api/tests`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(validated)
 		});
-		
+
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ detail: 'Failed to create test' }));
 			throw new Error(error.detail || 'Failed to create test');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -52,16 +52,16 @@ export async function loadTests(params: {
 			page: (params.page || 1).toString(),
 			page_size: (params.page_size || 20).toString()
 		});
-		
+
 		if (params.search) searchParams.append('search', params.search);
 		if (params.generation_method) searchParams.append('generation_method', params.generation_method);
-		
+
 		const response = await fetch(`${API_BASE}/api/tests?${searchParams}`);
-		
+
 		if (!response.ok) {
 			throw new Error('Failed to load tests');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -73,11 +73,11 @@ export async function loadTests(params: {
 export async function getTest(id: string): Promise<ApiResponse<Test>> {
 	try {
 		const response = await fetch(`${API_BASE}/api/tests/${id}`);
-		
+
 		if (!response.ok) {
 			throw new Error('Failed to load test');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -91,11 +91,11 @@ export async function deleteTest(id: string): Promise<ApiResponse<void>> {
 		const response = await fetch(`${API_BASE}/api/tests/${id}`, {
 			method: 'DELETE'
 		});
-		
+
 		if (!response.ok) {
 			throw new Error('Failed to delete test');
 		}
-		
+
 		return { data: undefined };
 	} catch (err) {
 		return { error: err instanceof Error ? err.message : 'Failed to delete test' };
@@ -107,18 +107,18 @@ export async function runTest(testId: string, tuning: TuningParameters): Promise
 	try {
 		// Validate tuning parameters
 		const validated = TuningParametersSchema.parse(tuning);
-		
+
 		const response = await fetch(`${API_BASE}/api/tests/${testId}/run`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(validated)
 		});
-		
+
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ detail: 'Failed to run test' }));
 			throw new Error(error.detail || 'Failed to run test');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -134,12 +134,12 @@ export async function generateTests(request: GenerateTestsRequest): Promise<ApiR
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(request)
 		});
-		
+
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ detail: 'Failed to generate tests' }));
 			throw new Error(error.detail || 'Failed to generate tests');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -151,11 +151,11 @@ export async function generateTests(request: GenerateTestsRequest): Promise<ApiR
 export async function getModels(): Promise<ApiResponse<string[]>> {
 	try {
 		const response = await fetch(`${API_BASE}/api/models`);
-		
+
 		if (!response.ok) {
 			throw new Error('Failed to load models');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
@@ -167,11 +167,11 @@ export async function getModels(): Promise<ApiResponse<string[]>> {
 export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>> {
 	try {
 		const response = await fetch(`${API_BASE}/api/tuning-defaults`);
-		
+
 		if (!response.ok) {
 			throw new Error('Failed to load tuning defaults');
 		}
-		
+
 		const data = await response.json();
 		return { data };
 	} catch (err) {
