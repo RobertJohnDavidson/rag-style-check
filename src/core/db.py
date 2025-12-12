@@ -3,54 +3,50 @@ import asyncio
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine, Engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.pool import NullPool
 from llama_index.vector_stores.postgres import PGVectorStore
 from src.config import settings
-
-# --- GLOBAL CONNECTOR ---
-# We initialize the connector once to be shared across both engines.
-# This prevents opening too many background threads.
-connector = Connector()
 
 def get_ip_type():
     if os.getenv("K_SERVICE"):
         return IPTypes.PRIVATE
     return IPTypes.PUBLIC
 
-def get_sync_conn():
-    """
-    Callback for pg8000 connection.
-    """
-    return connector.connect(
-        f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
-        "pg8000",
-        user=settings.DB_USER,
-        db=settings.DB_NAME,
-        enable_iam_auth=True,
-        ip_type=get_ip_type()
-    )
-
-async def get_async_conn():
-    """
-    Callback for asyncpg connection.
-    """
-    return await connector.connect_async(
-        f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
-        "asyncpg",
-        user=settings.DB_USER,
-        db=settings.DB_NAME,
-        enable_iam_auth=True,
-        ip_type=get_ip_type()
-    )
-
 def get_sync_engine() -> Engine:
     """Creates the SQLAlchemy Engine (Sync)."""
+    conn = Connector()
+    
+    def get_sync_conn():
+        return conn.connect(
+            f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
+            "pg8000",
+            user=settings.DB_USER,
+            db=settings.DB_NAME,
+            enable_iam_auth=True,
+            ip_type=get_ip_type()
+        )
+    
     return create_engine(
         "postgresql+pg8000://",
         creator=get_sync_conn,
     )
 
 def get_async_engine() -> AsyncEngine:
-    """Creates the SQLAlchemy AsyncEngine."""
+    """Creates the SQLAlchemy AsyncEngine with connectors bound to the running event loop."""
+    
+    async def get_async_conn():
+        loop = asyncio.get_running_loop()
+        connector = Connector(loop=loop)
+        conn = await connector.connect_async(
+            f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
+            "asyncpg",
+            user=settings.DB_USER,
+            db=settings.DB_NAME,
+            enable_iam_auth=True,
+            ip_type=get_ip_type()
+        )
+        return conn
+    
     return create_async_engine(
         "postgresql+asyncpg://",
         async_creator=get_async_conn,

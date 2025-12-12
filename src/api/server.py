@@ -31,8 +31,7 @@ from src.api.schemas import (
     AuditRequest,
     AuditResponse,
     Violation,
-    TestCase,
-    TestSuiteRequest,
+
     ModelInfo
 )
 from src.api.test_schemas import (
@@ -82,7 +81,7 @@ async def lifespan(app: FastAPI):
     try:
         db_engine = get_async_engine()
         sync_db_engine = get_sync_engine()
-        # Test connection?
+        # Test connection
         async with db_engine.connect() as conn:
              print("✅ Database connection established.")
     except Exception as e:
