@@ -6,6 +6,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
 from llama_index.vector_stores.postgres import PGVectorStore
 from src.config import settings
 
+# --- GLOBAL CONNECTOR ---
+# We initialize the connector once to be shared across both engines.
+# This prevents opening too many background threads.
+connector = Connector()
+
 def get_ip_type():
     if os.getenv("K_SERVICE"):
         return IPTypes.PRIVATE
@@ -15,8 +20,7 @@ def get_sync_conn():
     """
     Callback for pg8000 connection.
     """
-    connector = Connector()
-    conn = connector.connect(
+    return connector.connect(
         f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
         "pg8000",
         user=settings.DB_USER,
@@ -24,19 +28,12 @@ def get_sync_conn():
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
-    return conn
 
 async def get_async_conn():
     """
     Callback for asyncpg connection.
-    Note: Connector must be initialized in the running loop context if loop is provided,
-    or just default if running standard asyncio.
     """
-    # Initialize connector lazily to ensure it attaches to the current loop
-    loop = asyncio.get_running_loop()
-    connector = Connector(loop=loop)
-    
-    conn = await connector.connect_async(
+    return await connector.connect_async(
         f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
         "asyncpg",
         user=settings.DB_USER,
@@ -44,9 +41,6 @@ async def get_async_conn():
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
-    # Note: In a real app, we should probably close the connector when app shuts down.
-    # For now, we return the connection.
-    return conn
 
 def get_sync_engine() -> Engine:
     """Creates the SQLAlchemy Engine (Sync)."""
@@ -83,8 +77,8 @@ def init_vector_store_for_ingest(engine: Engine, async_engine: AsyncEngine) -> P
         async_engine=async_engine,
         table_name=settings.TABLE_NAME,
         embed_dim=settings.EMBED_DIM,
-        hybrid_search=True,
         perform_setup=True,
+        hybrid_search=True,
         text_search_config="english",
         hnsw_kwargs=settings.HNSW_KWARGS,
     )
@@ -99,10 +93,10 @@ def setup_tsvector_column(engine: Engine, table_name: str | None = None) -> None
         f"""CREATE INDEX IF NOT EXISTS idx_{normalized_name}_tsv ON {normalized_name} USING GIN (text_search_tsv);""",
         f"""CREATE OR REPLACE FUNCTION {normalized_name}_tsv_trigger()
 RETURNS trigger AS $$
-
+BEGIN
   new.text_search_tsv := to_tsvector('english', coalesce(new.text, ''));
   return new;
-end
+END;
 $$ LANGUAGE plpgsql;""",
         f"""DROP TRIGGER IF EXISTS tsvectorupdate ON {normalized_name};""",
         f"""CREATE TRIGGER tsvectorupdate

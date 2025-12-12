@@ -89,11 +89,6 @@ async def lifespan(app: FastAPI):
         print(f"❌ Database connection failed: {e}")
     
     # 3. Vector Store & Index
-    # For now, we init vector store. 
-    # NOTE: LlamaIndex VectorStoreIndex usually needs an initialized store.
-    # 3. Vector Store & Index
-    # For now, we init vector store. 
-    # NOTE: LlamaIndex VectorStoreIndex usually needs an initialized store.
     if db_engine and sync_db_engine:
         try:
             vector_store = init_vector_store(sync_db_engine, db_engine)

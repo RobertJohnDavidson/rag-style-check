@@ -18,18 +18,29 @@ class AppSettings(BaseModel):
     DB_USER: Optional[str] = os.getenv("DB_USER")
     DB_NAME: str = os.getenv("DB_NAME", "postgres")
     DB_REGION: str = os.getenv("DB_REGION", "us-central1")
-    TABLE_NAME: str = "rag_vectors"
+    TABLE_NAME: str = "rag_vectors"  # Name passed to PGVectorStore
+    ACTUAL_TABLE_NAME: str = "data_rag_vectors"  # Actual name in database (PGVectorStore adds 'data_' prefix)
     
     # Model Config
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
     EMBED_DIM: int = 768
     DEFAULT_MODEL: str = os.getenv("MODEL", "models/gemini-1.5-flash")
-    HNSW_KWARGS: dict = {
+    # HNSW Index creation parameters (used during table setup)
+    HNSW_INDEX_KWARGS: dict = {
         "hnsw_m": 24,
         "hnsw_ef_construction": 512,
-        "hnsw_ef_search": 40,
         "hnsw_dist_method": "vector_cosine_ops",
     }
+    
+    # HNSW Query parameters (used during vector search)
+    HNSW_QUERY_KWARGS: dict = {
+        "hnsw_ef_search": 100,
+    }
+    
+    # Combined for PGVectorStore initialization (needs both)
+    @property
+    def HNSW_KWARGS(self) -> dict:
+        return {**self.HNSW_INDEX_KWARGS, **self.HNSW_QUERY_KWARGS}
     
     # Tuning Defaults
     DEFAULT_INITIAL_RETRIEVAL_COUNT: int = 75
