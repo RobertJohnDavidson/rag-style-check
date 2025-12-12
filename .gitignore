@@ -8,3 +8,4 @@
 .env
 /build
 service-account-key.json
+ingestion_cache.json
