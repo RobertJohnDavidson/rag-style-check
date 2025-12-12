@@ -8,27 +8,13 @@ import asyncio
 import requests
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any
-import os
-from dotenv import load_dotenv
-
+from src.config import settings
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core import Settings, QueryBundle
 from llama_index.core.retrievers import VectorIndexRetriever
 
 # Import reranker
 from src.core.reranker import VertexAIRerank
-
-load_dotenv()
-
-PROJECT_NAME = os.getenv("PROJECT_NAME")
-REGION = os.getenv("REGION", "us-central1")
-MODEL = os.getenv("MODEL", "models/gemini-1.5-flash")
-
-# RAG Configuration
-INITIAL_RETRIEVAL_COUNT = 50
-FINAL_TOP_K = 15
-RERANK_SCORE_THRESHOLD = 0.10
-RERANK_TOP_N = 15
 
 
 def fetch_cbc_article_text(url: str) -> List[str]:
@@ -66,10 +52,10 @@ def fetch_cbc_article_text(url: str) -> List[str]:
 def generate_synthetic_paragraph(topic: str) -> str:
     """Asks LLM to write a clean paragraph on a topic."""
     llm = GoogleGenAI(
-        model=MODEL,
+        model=settings.DEFAULT_MODEL,
         vertexai_config={
-            "project": PROJECT_NAME,
-            "location": REGION
+            "project": settings.PROJECT_ID,
+            "location": settings.REGION
         },
         temperature=0.7
     )
@@ -80,72 +66,46 @@ def generate_synthetic_paragraph(topic: str) -> str:
 
 def retrieve_relevant_rules(text: str, retriever: VectorIndexRetriever, reranker=None, top_k: int = 15) -> List[Dict]:
     """Retrieve relevant style guide rules from vector DB."""
-    import re
-    from spacy.lang.en import English
+    # Simple full-text retrieval matching Auditor's approach
+    # Note: Auditor uses async aretrieve, but this runs in a thread pool so sync retrieve is fine.
     
-    nlp = English()
-    nlp.add_pipe("sentencizer")
+    # 1. Retrieve
+    nodes = retriever.retrieve(text)
     
-    doc = nlp(text)
-    sentences = [sent.text.strip() for sent in doc.sents if len(sent.text.strip()) > 5]
+    # 2. Rerank
+    if nodes and reranker:
+        try:
+            query_bundle = QueryBundle(query_str=text)
+            nodes = reranker.postprocess_nodes(nodes=nodes, query_bundle=query_bundle)
+        except Exception as e:
+            print(f"Reranking failed: {e}")
+            nodes = nodes[:top_k]
     
-    aggregated = {}
-    
-    # Query expansion
-    def expand_query(query):
-        expanded = [query]
-        query_lower = query.lower()
-        
-        if "quotation" in query_lower:
-            expanded.extend(["quotes", "quotation marks"])
-        if "dash" in query_lower:
-            expanded.extend(["em dash", "en dash", "hyphen"])
-        if "capital" in query_lower:
-            expanded.extend(["uppercase", "lowercase"])
-        
-        return expanded[:2]
-    
-    # Sentence-based retrieval
-    for sentence in sentences:
-        queries = expand_query(sentence)
-        
-        for query in queries:
-            nodes = retriever.retrieve(query)
+    # 3. Filter and Format
+    rules = []
+    for node in nodes:
+        score = getattr(node, 'score', 0)
+        if score >= settings.DEFAULT_RERANK_SCORE_THRESHOLD:
+            rules.append({
+                "term": node.metadata.get('term', 'Unknown Rule'),
+                "text": node.metadata.get('display_text', node.get_content()),
+                "url": node.metadata.get('url', ''),
+                "score": score
+            })
             
-            if nodes and reranker:
-                try:
-                    query_bundle = QueryBundle(query_str=query)
-                    nodes = reranker.postprocess_nodes(nodes=nodes, query_bundle=query_bundle)
-                    nodes = [n for n in nodes if getattr(n, 'score', 0) >= RERANK_SCORE_THRESHOLD]
-                except Exception:
-                    nodes = nodes[:5]
-            else:
-                nodes = nodes[:5] if nodes else []
-            
-            for node in nodes:
-                term = node.metadata.get('term', 'Unknown Rule')
-                key = (term, node.metadata.get('url', ''))
-                score = getattr(node, 'score', 0)
-                
-                if key not in aggregated or score > aggregated[key]['score']:
-                    aggregated[key] = {
-                        "term": term,
-                        "text": node.metadata.get('display_text', node.get_content()),
-                        "url": node.metadata.get('url', ''),
-                        "score": score
-                    }
+    # Sort by score descending
+    rules.sort(key=lambda x: x['score'], reverse=True)
     
-    sorted_rules = sorted(aggregated.values(), key=lambda r: r['score'], reverse=True)
-    return sorted_rules[:top_k]
+    return rules[:top_k]
 
 
 def inject_errors(text: str, num_errors: int, retriever: VectorIndexRetriever, reranker) -> Dict[str, Any]:
     """Injects style errors into text and returns test case."""
     llm = GoogleGenAI(
-        model=MODEL,
+        model=settings.DEFAULT_MODEL,
         vertexai_config={
-            "project": PROJECT_NAME,
-            "location": REGION
+            "project": settings.PROJECT_ID,
+            "location": settings.REGION
         },
         temperature=0.9
     )

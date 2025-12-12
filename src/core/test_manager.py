@@ -13,14 +13,10 @@ import sqlalchemy
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text as sql_text
 
-load_dotenv()
+from src.config import settings
 
 # --- CONFIGURATION ---
-PROJECT_ID = os.getenv("PROJECT_NAME")
-REGION = os.getenv("DB_REGION", "us-central1")
-INSTANCE_NAME = os.getenv("INSTANCE_NAME")
-DB_USER = os.getenv("DB_USER")
-DB_NAME = os.getenv("DB_NAME", "postgres")
+# Using settings from src.config
 
 def get_ip_type():
     """Determine IP type based on environment"""
@@ -35,10 +31,10 @@ async def get_async_conn():
     loop = asyncio.get_running_loop()
     connector = Connector(loop=loop)
     conn = await connector.connect_async(
-        f"{PROJECT_ID}:{REGION}:{INSTANCE_NAME}",
+        f"{settings.PROJECT_ID}:{settings.DB_REGION}:{settings.INSTANCE_NAME}",
         "asyncpg",
-        user=DB_USER,
-        db=DB_NAME,
+        user=settings.DB_USER,
+        db=settings.DB_NAME,
         enable_iam_auth=True,
         ip_type=get_ip_type()
     )
