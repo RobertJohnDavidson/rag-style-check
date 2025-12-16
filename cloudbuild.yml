@@ -1,0 +1,34 @@
+timeout: 1200s
+
+steps:
+  # Step 1: Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - 't'
+      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
+      - '.'
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
+    id: 'push-$_IMAGE_TAG'
+    waitFor: ['build']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: 
+      - 'run'
+      - 'deploy'
+      - '$_SERVICE_NAME'
+      - '--image'
+      - 'northamerica-northeast2-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
+      - '--region'
+      - 'northamerica-northeast1'
+      - '--platform'
+      - managed
+# Default values (used if you run this manually via CLI)
+substitutions:
+  _SERVICE_NAME: 'ai-style-check-nightly'
+  _IMAGE_TAG: 'latest'
