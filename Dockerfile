@@ -44,8 +44,8 @@ COPY run_server.py ./
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/build ./frontend/build
 
-# Expose ports
-EXPOSE 8000
+# Expose port (Cloud Run will set PORT env var, default to 8080)
+EXPOSE 8080
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1

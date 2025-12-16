@@ -33,6 +33,14 @@ steps:
       - managed
       - "--service-account"
       - "rag-app-service-account@dig-es-nm-newslab-ai-style-chk.iam.gserviceaccount.com"
+      - "--timeout"
+      - "600"
+      - "--port"
+      - "8080"
+      - "--cpu"
+      - "2"
+      - "--memory"
+      - "2Gi"
 # Default values (used if you run this manually via CLI)
 substitutions:
   _SERVICE_NAME: "ai-style-check-nightly"
