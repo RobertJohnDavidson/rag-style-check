@@ -8,13 +8,12 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'build'
-      - 't'
+      - '-t'
       - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
-      - 't'
+      - '-t'
       - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$COMMIT_SHA'
       - '.'
 
-  
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
