@@ -8,37 +8,15 @@ services:
       - "8000:8000"
     environment:
       - PROJECT_NAME=${PROJECT_NAME:-cbc-style-checker}
-      # Point to the mounted ADC file
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/adc.json
-    volumes:
-      # Mount .env if exists
-      - ./.env:/app/.env:ro
-      # Mount local Application Default Credentials (Standard location)
-      - ${HOME}/.config/gcloud/application_default_credentials.json:/app/config/adc.json:ro
-      # DEV: Mount source code for hot reload
-      - ./src:/app/src
-      - ./run_server.py:/app/run_server.py
-    # Override command to run in dev mode (no --production flag)
-    command: python run_server.py --host 0.0.0.0
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')" ]
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import requests; requests.get('http://localhost:8000/health').raise_for_status()",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # Frontend dev server (optional - for development)
-  frontend-dev:
-    image: oven/bun:latest
-    working_dir: /app
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: sh -c "bun install && bun run dev -- --host 0.0.0.0"
-    environment:
-      - VITE_API_URL=http://localhost:8000
-    profiles:
-      - dev
-    restart: unless-stopped
