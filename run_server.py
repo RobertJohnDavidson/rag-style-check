@@ -10,11 +10,15 @@ Usage:
 
 import argparse
 import uvicorn
+import os  # <--- 1. Import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the CBC News Style Checker API")
+    
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind to (default: 0.0.0.0)")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to (default: 8000)")
+
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="Port to bind to")
+    
     parser.add_argument("--production", action="store_true", help="Run in production mode (no auto-reload)")
     
     args = parser.parse_args()
