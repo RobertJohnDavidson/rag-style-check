@@ -1,38 +1,39 @@
 options:
+  machineType: "E2_HIGHCPU_8"
   logging: CLOUD_LOGGING_ONLY
 
 steps:
   # Step 1: Build the Docker image
-  - name: 'gcr.io/cloud-builders/docker'
-    args: 
-      - 'build'
-      - '-t'
-      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
-      - '-t'
-      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$COMMIT_SHA'
-      - '.'
-
-  - name: 'gcr.io/cloud-builders/docker'
+  - name: "gcr.io/cloud-builders/docker"
     args:
-      - 'push'
-      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
-    id: 'push-$_IMAGE_TAG'
+      - "build"
+      - "-t"
+      - "northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG"
+      - "-t"
+      - "northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$COMMIT_SHA"
+      - "."
 
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG"
+    id: "push-$_IMAGE_TAG"
+
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
-    args: 
-      - 'run'
-      - 'deploy'
-      - '$_SERVICE_NAME'
-      - '--image'
-      - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
-      - '--region'
-      - 'northamerica-northeast1'
-      - '--platform'
+    args:
+      - "run"
+      - "deploy"
+      - "$_SERVICE_NAME"
+      - "--image"
+      - "northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG"
+      - "--region"
+      - "northamerica-northeast1"
+      - "--platform"
       - managed
-      - '--service-account'  
-      - 'rag-app-service-account@dig-es-nm-newslab-ai-style-chk.iam.gserviceaccount.com'
+      - "--service-account"
+      - "rag-app-service-account@dig-es-nm-newslab-ai-style-chk.iam.gserviceaccount.com"
 # Default values (used if you run this manually via CLI)
 substitutions:
-  _SERVICE_NAME: 'ai-style-check-nightly'
-  _IMAGE_TAG: 'latest'
+  _SERVICE_NAME: "ai-style-check-nightly"
+  _IMAGE_TAG: "latest"

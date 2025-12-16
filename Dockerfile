@@ -49,7 +49,6 @@ EXPOSE 8000
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-ENV PORT=8000
 
 # Run the server
-CMD ["sh", "-c", "python run_server.py --production --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["python", "run_server.py", "--production"]
