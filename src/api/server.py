@@ -188,14 +188,6 @@ async def health_check():
         "db_ready": db_engine is not None
     }
 
-@app.get("/")
-async def root():
-    return {
-        "service": "CBC News Style Checker",
-        "status": "healthy",
-        "version": "1.0.0"
-    }
-
 @app.post("/audit", response_model=AuditResponse)
 async def audit_text(
     request: AuditRequest,
