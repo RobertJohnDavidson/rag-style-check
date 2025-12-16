@@ -1,5 +1,3 @@
-timeout: 1200s
-
 options:
   logging: CLOUD_LOGGING_ONLY
 
@@ -31,9 +29,9 @@ steps:
       - '--region'
       - 'northamerica-northeast1'
       - '--platform'
+      - managed
       - '--service-account'  
       - 'rag-app-service-account@dig-es-nm-newslab-ai-style-chk.iam.gserviceaccount.com'
-      - managed
 # Default values (used if you run this manually via CLI)
 substitutions:
   _SERVICE_NAME: 'ai-style-check-nightly'
