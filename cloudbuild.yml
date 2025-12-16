@@ -2,7 +2,7 @@ timeout: 1200s
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  
+
 steps:
   # Step 1: Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
@@ -19,7 +19,6 @@ steps:
       - 'push'
       - 'northamerica-northeast1-docker.pkg.dev/dig-es-nm-newslab-ai-style-chk/ai-projects/ai-style-check:$_IMAGE_TAG'
     id: 'push-$_IMAGE_TAG'
-    waitFor: ['build']
 
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud

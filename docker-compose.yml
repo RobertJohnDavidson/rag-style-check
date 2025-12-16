@@ -11,8 +11,6 @@ services:
       # Point to the mounted ADC file
       - GOOGLE_APPLICATION_CREDENTIALS=/app/config/adc.json
     volumes:
-      # Mount db for persistence
-      - ./db:/app/db
       # Mount .env if exists
       - ./.env:/app/.env:ro
       # Mount local Application Default Credentials (Standard location)
