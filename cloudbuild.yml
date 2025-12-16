@@ -31,6 +31,8 @@ steps:
       - '--region'
       - 'northamerica-northeast1'
       - '--platform'
+      - '--service-account'  
+      - 'rag-app-service-account@dig-es-nm-newslab-ai-style-chk.iam.gserviceaccount.com'
       - managed
 # Default values (used if you run this manually via CLI)
 substitutions:
