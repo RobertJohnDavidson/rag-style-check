@@ -1,4 +1,6 @@
 <script lang="ts">
+	import {page} from '$app/state';
+
 
 	let text = $state('');
 	let violations = $state<Array<{ text: string; rule: string; reason: string; source_url?: string }>>([]);
@@ -18,7 +20,7 @@
 
 
 		try {
-			const response = await fetch('http://localhost:8000/audit', {
+			const response = await fetch(`${page.url.pathname}/audit`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
