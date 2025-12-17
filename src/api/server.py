@@ -110,7 +110,7 @@ async def lifespan(app: FastAPI):
         model=settings.DEFAULT_MODEL,
         vertexai_config={
             "project": settings.PROJECT_ID,
-            "location": settings.REGION
+            "location": settings.LLM_REGION
         },
         temperature=0.1
     )

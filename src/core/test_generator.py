@@ -55,7 +55,7 @@ def generate_synthetic_paragraph(topic: str) -> str:
         model=settings.DEFAULT_MODEL,
         vertexai_config={
             "project": settings.PROJECT_ID,
-            "location": settings.REGION
+            "location": settings.LLM_REGION
         },
         temperature=0.7
     )
@@ -105,7 +105,7 @@ def inject_errors(text: str, num_errors: int, retriever: VectorIndexRetriever, r
         model=settings.DEFAULT_MODEL,
         vertexai_config={
             "project": settings.PROJECT_ID,
-            "location": settings.REGION
+            "location": settings.LLM
         },
         temperature=0.9
     )

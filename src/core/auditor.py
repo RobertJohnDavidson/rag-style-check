@@ -134,7 +134,7 @@ class StyleAuditor:
         if VertexAIRerank:
             self.vertex_reranker = VertexAIRerank(
                 project_id=settings.PROJECT_ID,
-                location_id=settings.REGION,
+                location_id=settings.LLM_REGION,
                 ranking_config="default_ranking_config",
                 top_n=self.config.final_top_k
             )

@@ -11,8 +11,9 @@ load_dotenv()
 class AppSettings(BaseModel):
     # Google Cloud
     PROJECT_ID: str = os.getenv("PROJECT_NAME", "")
-    REGION: str = os.getenv("REGION", "us-central1")
-    
+    LLM_REGION: str = os.getenv("REGION", "us-central1")
+    EMBED_REGION: str = os.getenv("EMBED_REGION", "us-central1")
+
     # Database
     INSTANCE_NAME: Optional[str] = os.getenv("INSTANCE_NAME")
     DB_USER: Optional[str] = os.getenv("DB_USER")
@@ -67,7 +68,7 @@ def init_settings():
         model_name=settings.EMBEDDING_MODEL,
         vertexai_config={
             "project": settings.PROJECT_ID,
-            "location": settings.REGION
+            "location": settings.EMBED_REGION
         },
         embedding_config=EmbedContentConfig(
             output_dimensionality=settings.EMBED_DIM 
