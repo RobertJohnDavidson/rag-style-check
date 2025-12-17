@@ -105,7 +105,7 @@ def inject_errors(text: str, num_errors: int, retriever: VectorIndexRetriever, r
         model=settings.DEFAULT_MODEL,
         vertexai_config={
             "project": settings.PROJECT_ID,
-            "location": settings.LLM
+            "location": settings.LLM_REGION
         },
         temperature=0.9
     )
