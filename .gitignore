@@ -10,3 +10,4 @@
 service-account-key.json
 ingestion_cache.json
 docker-compose.dev.yml
+.vscode/
