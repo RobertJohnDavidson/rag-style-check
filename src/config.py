@@ -11,7 +11,7 @@ load_dotenv()
 class AppSettings(BaseModel):
     # Google Cloud
     PROJECT_ID: str = os.getenv("PROJECT_NAME", "")
-    LLM_REGION: str = os.getenv("REGION", "us-central1")
+    LLM_REGION: str = os.getenv("LLM_REGION", "us-central1")
     EMBED_REGION: str = os.getenv("EMBED_REGION", "us-central1")
 
     # Database
