@@ -2,12 +2,23 @@
 import type { Test, TestResult, TuningParameters, PaginatedResponse, GenerateTestsRequest, GenerateTestsResponse } from './types';
 import { TestInputSchema, TuningParametersSchema } from './schemas';
 
-const API_BASE = 'http://localhost:8000';
-
 // Generic API response wrapper
 interface ApiResponse<T> {
 	data?: T;
 	error?: string;
+}
+
+// Get the API base URL from the current origin
+export function getApiBase(baseUrl?: string | URL): string {
+	if (baseUrl) {
+		return baseUrl instanceof URL ? baseUrl.origin : new URL(baseUrl).origin;
+	}
+	// In browser context, use current origin
+	if (typeof window !== 'undefined') {
+		return window.location.origin;
+	}
+	// Fallback for SSR or server context
+	return 'http://localhost:8000';
 }
 
 // Create a new test
@@ -22,7 +33,7 @@ export async function createTest(input: {
 		// Validate input
 		const validated = TestInputSchema.parse(input);
 
-		const response = await fetch(`${API_BASE}/api/tests`, {
+		const response = await fetch(`${getApiBase()}/api/tests`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(validated)
@@ -56,7 +67,7 @@ export async function loadTests(params: {
 		if (params.search) searchParams.append('search', params.search);
 		if (params.generation_method) searchParams.append('generation_method', params.generation_method);
 
-		const response = await fetch(`${API_BASE}/api/tests?${searchParams}`);
+		const response = await fetch(`${getApiBase()}/api/tests?${searchParams}`);
 
 		if (!response.ok) {
 			throw new Error('Failed to load tests');
@@ -72,7 +83,7 @@ export async function loadTests(params: {
 // Get a single test by ID
 export async function getTest(id: string): Promise<ApiResponse<Test>> {
 	try {
-		const response = await fetch(`${API_BASE}/api/tests/${id}`);
+		const response = await fetch(`${getApiBase()}/api/tests/${id}`);
 
 		if (!response.ok) {
 			throw new Error('Failed to load test');
@@ -88,7 +99,7 @@ export async function getTest(id: string): Promise<ApiResponse<Test>> {
 // Delete a test
 export async function deleteTest(id: string): Promise<ApiResponse<void>> {
 	try {
-		const response = await fetch(`${API_BASE}/api/tests/${id}`, {
+		const response = await fetch(`${getApiBase()}/api/tests/${id}`, {
 			method: 'DELETE'
 		});
 
@@ -108,7 +119,7 @@ export async function runTest(testId: string, tuning: TuningParameters): Promise
 		// Validate tuning parameters
 		const validated = TuningParametersSchema.parse(tuning);
 
-		const response = await fetch(`${API_BASE}/api/tests/${testId}/run`, {
+		const response = await fetch(`${getApiBase()}/api/tests/${testId}/run`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(validated)
@@ -129,7 +140,7 @@ export async function runTest(testId: string, tuning: TuningParameters): Promise
 // Generate tests from article or synthetically
 export async function generateTests(request: GenerateTestsRequest): Promise<ApiResponse<GenerateTestsResponse>> {
 	try {
-		const response = await fetch(`${API_BASE}/api/generate-tests`, {
+		const response = await fetch(`${getApiBase()}/api/generate-tests`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(request)
@@ -150,7 +161,7 @@ export async function generateTests(request: GenerateTestsRequest): Promise<ApiR
 // Get available models
 export async function getModels(): Promise<ApiResponse<string[]>> {
 	try {
-		const response = await fetch(`${API_BASE}/api/models`);
+		const response = await fetch(`${getApiBase()}/api/models`);
 
 		if (!response.ok) {
 			throw new Error('Failed to load models');
@@ -166,7 +177,7 @@ export async function getModels(): Promise<ApiResponse<string[]>> {
 // Get default tuning parameters
 export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>> {
 	try {
-		const response = await fetch(`${API_BASE}/api/tuning-defaults`);
+		const response = await fetch(`${getApiBase()}/api/tuning-defaults`);
 
 		if (!response.ok) {
 			throw new Error('Failed to load tuning defaults');

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import {page} from '$app/state';
+	import {getApiBase} from '$lib/api';
 
 
 	let text = $state('');
@@ -20,7 +20,7 @@
 
 
 		try {
-			const response = await fetch(`${page.url.pathname}/audit`, {
+			const response = await fetch(`${getApiBase()}/audit`, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

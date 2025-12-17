@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { ErrorBoundary, Modal } from '$lib/components/ui';
 	import { CreateTab, BrowseTab, RunTab } from '$lib/components/tabs';
-
 	// Active tab state
 	let activeTab: 'create' | 'browse' | 'run' = $state('create');
 
@@ -82,7 +81,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <ErrorBoundary>
-	<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+	<div class="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 p-8">
 		<div class="max-w-7xl mx-auto">
 			<!-- Header -->
 			<div class="mb-8">
@@ -96,7 +95,7 @@
 			<!-- Tabs -->
 			<div class="bg-white rounded-lg shadow-lg mb-6">
 				<div class="border-b border-gray-200">
-					<nav class="flex -mb-px" role="tablist">
+					<div class="flex -mb-px" role="tablist">
 						<button
 							role="tab"
 							aria-selected={activeTab === 'create'}
@@ -133,7 +132,7 @@
 							Run Test
 							<span class="sr-only">(Ctrl/Cmd + 3)</span>
 						</button>
-					</nav>
+					</div>
 				</div>
 
 				<!-- Tab Content with scroll reset -->
