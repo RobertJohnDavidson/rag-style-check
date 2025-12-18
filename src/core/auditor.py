@@ -141,25 +141,58 @@ class StyleAuditor:
 
         logger.info(f"🔧 Auditor initialized with Model: {self.config.model_name}")
 
-    async def check_text(self, text: str) -> List[Dict]:
+    async def check_text(self, text: str) -> tuple[List[Dict], Dict]:
         """
         Main Async Entry Point.
+        Returns a tuple of (violations, log_data).
         """
         if not text.strip():
-            return []
+            return [], {}
 
         paragraphs = self._split_paragraphs(text)
         all_violations = []
+        interim_steps = []
 
         logger.info(f"🔍 Auditing {len(paragraphs)} paragraph(s)...")
 
         # Process paragraphs allowed (sequentially or parallel - sequential is safer for rate limits)
-        for paragraph in paragraphs:
-            paragraph_violations = await self._audit_paragraph_agentic(paragraph)
+        for i, paragraph in enumerate(paragraphs):
+            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(paragraph)
             if paragraph_violations:
                 all_violations.extend(paragraph_violations)
+            interim_steps.append({
+                "paragraph_index": i,
+                "text": paragraph,
+                "steps": paragraph_steps
+            })
         
-        return deduplicate_violations(all_violations)
+        final_violations = deduplicate_violations(all_violations)
+        
+        # Categorize parameters
+        llm_params = {
+            "temperature": self.config.temperature,
+            "max_agent_iterations": self.config.max_agent_iterations,
+            "confidence_threshold": self.config.confidence_threshold
+        }
+        rag_params = {
+            "initial_retrieval_count": self.config.initial_retrieval_count,
+            "final_top_k": self.config.final_top_k,
+            "rerank_score_threshold": self.config.rerank_score_threshold,
+            "aggregated_rule_limit": self.config.aggregated_rule_limit,
+            "use_query_fusion": self.config.use_query_fusion,
+            "use_llm_rerank": self.config.use_llm_rerank,
+            "min_sentence_length": self.config.min_sentence_length
+        }
+
+        log_data = {
+            "model_used": self.config.model_name,
+            "llm_parameters": llm_params,
+            "rag_parameters": rag_params,
+            "interim_steps": interim_steps,
+            "final_output": final_violations
+        }
+        
+        return final_violations, log_data
 
     def _split_paragraphs(self, text: str) -> List[str]:
         if not text:
@@ -167,17 +200,25 @@ class StyleAuditor:
         chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
         return chunks if chunks else [text.strip()]
 
-    async def _audit_paragraph_agentic(self, paragraph: str) -> List[Dict]:
+    async def _audit_paragraph_agentic(self, paragraph: str) -> tuple[List[Dict], List[Dict]]:
         """
         Agentic audit loop with async execution and structured output.
+        Returns (violations, steps).
         """
+        steps = []
         # SKIP very short paragraphs
         if len(paragraph.split()) < self.config.min_sentence_length:
-            return []
+            return [], steps
 
         # 1. Advanced Retrieval
         logger.info("🔍 Retrieving rules...")
-        contexts = await self._retrieve_advanced(paragraph)
+        # Capture tags and retrieval nodes
+        # Note: _retrieve_advanced currently returns dicts. Let's capture the process.
+        contexts, retrieval_details = await self._retrieve_advanced_with_details(paragraph)
+        steps.append({
+            "type": "retrieval",
+            "details": retrieval_details
+        })
         
         # Deduplicate contexts
         unique_contexts = {c['id']: c for c in contexts}.values()
@@ -194,43 +235,28 @@ class StyleAuditor:
             
             # Call LLM with Structured Output
             try:
-                # Use LlamaIndex's structured prediction if available, else manual
-                # Assuming `llm.astructured_predict` exists in recent versions.
-                # If NOT, we use `acomplete` and Pydantic program.
-                # Since we are using GoogleGenAI directly, let's try the program approach or native if supported.
-                # Simplest path: Use `llm.apredict` or similar if `astructured_predict` isn't ready.
-                # But GoogleGenAI usually supports it.
-                
-                # Check if we can use sstructured_predict (LlamaIndex abstraction)
-                # If not, fallback to JSON prompt + parse.
-                # For safety in this refactor without checking installed version capabilities:
-                # We will use the `prompt` which already asks for JSON, but we will ENFORCE it via `program` if possible.
-                # Actually, `GoogleGenAI` class in LlamaIndex likely supports `astructured_predict`.
-                
-                response_obj = await self.llm.astructured_predict(
-                    AuditResult,
-                    prompt_template=prompt, 
-                    # Note: prompt_template expects a PromptTemplate object usually, or string.
-                    # Depending on version. Let's assume string works or wrap it.
-                    # To be safe, let's use `acomplete` and parse, OR standard prompt.   
-                )
-                
-                # The above `astructured_predict` takes a PromptTemplate. 
-                # Let's fallback to `acomplete` with Pydantic generator if unsure about versions.
-                # However, the user REQUESTED Pydantic.
-                # Let's try `llm.astructured_predict(AuditResult, ...)`
-                
-            except Exception:
-                # Fallback or distinct error handling
-                # If `astructured_predict` fails or isn't found, try `acomplete` and parse.
-                # For this implementation, let's assume valid environment.
-                # BUT wait, `prompt` is a string. `astructured_predict` needs `PromptTemplate`.
                 from llama_index.core import PromptTemplate
                 tmpl = PromptTemplate(prompt)
                 response_obj = await self.llm.astructured_predict(AuditResult, tmpl)
+            except Exception as e:
+                logger.error(f"Structured predict failed: {e}")
+                steps.append({
+                    "type": "iteration_error",
+                    "iteration": iteration,
+                    "error": str(e)
+                })
+                break
 
             if not response_obj:
                 break
+            
+            # Capture Iteration
+            steps.append({
+                "type": "iteration",
+                "iteration": iteration,
+                "prompt": prompt,
+                "response": response_obj.model_dump()
+            })
                 
             # Process Result
             new_violations = response_obj.violations
@@ -249,9 +275,69 @@ class StyleAuditor:
             if response_obj.additional_queries:
                 logger.info(f"🔍 Requesting more context: {response_obj.additional_queries}")
                 new_ctx = await self._collect_additional_contexts(response_obj.additional_queries)
+                steps.append({
+                    "type": "additional_retrieval",
+                    "queries": response_obj.additional_queries,
+                    "results": new_ctx
+                })
                 contexts.extend(new_ctx)
 
-        return deduplicate_violations(violations)
+        return deduplicate_violations(violations), steps
+
+    async def _retrieve_advanced_with_details(self, text: str) -> tuple[List[Dict], Dict]:
+        """Async Advanced Retrieval with detailed logging."""
+        details = {}
+        # 0. Classify Tags (Optional Optimization)
+        tags = await self._classify_text_async(text)
+        details["tags"] = tags
+        
+        tags_str = ", ".join(tags)
+        
+        query_text = text
+        if tags:
+            logger.info(f"🏷️ Tags: {tags_str}")
+            query_text = f"Tags: {tags_str}. Content: {text}"
+        
+        details["final_query"] = query_text
+
+        # 1. Retrieve
+        try:
+            # Note: QueryFusionRetriever might generate inner queries.
+            # We can't easily capture them unless we subclass or inspect.
+            # For now, capture the result nodes.
+            nodes = await self.retriever.aretrieve(query_text)
+            details["retrieved_nodes_count"] = len(nodes)
+        except Exception as e:
+            logger.error(f"Retrieval failed: {e}")
+            details["error"] = str(e)
+            return [], details
+
+        # 2. Rerank (LLM)
+        if self.config.use_llm_rerank and self.llm_reranker and nodes:
+             try:
+                 query_bundle = QueryBundle(query_str=text) 
+                 if hasattr(self.llm_reranker, "apostprocess_nodes"):
+                    nodes = await self.llm_reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
+                 else:
+                    nodes = self.llm_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                 details["llm_reranked_count"] = len(nodes)
+             except Exception as e:
+                 logger.warning(f"LLM Rerank failed: {e}")
+                 details["llm_rerank_error"] = str(e)
+
+        # 3. Rerank (Vertex)
+        if self.vertex_reranker and nodes and not self.config.use_llm_rerank:
+            try:
+                query_bundle = QueryBundle(query_str=text)
+                nodes = self.vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                details["vertex_reranked_count"] = len(nodes)
+            except Exception as e:
+                 logger.warning(f"Vertex Rerank failed: {e}")
+                 details["vertex_rerank_error"] = str(e)
+
+        results = self._nodes_to_dicts(nodes, source_type="advanced_retrieval")
+        details["results"] = results
+        return results, details
 
     async def _retrieve_advanced(self, text: str) -> List[Dict]:
         """Async Advanced Retrieval."""

@@ -9,6 +9,7 @@ from typing import List, Optional, Dict, Any
 class AuditRequest(BaseModel):
     text: str = Field(..., description="Text to audit for style violations")
     model: Optional[str] = Field(None, description="Optional model override")
+    test_id: Optional[str] = Field(None, description="Optional ID of the test case if this is a test run")
 
 
 class Violation(BaseModel):

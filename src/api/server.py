@@ -19,11 +19,17 @@ from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 import nest_asyncio
+import logging
 nest_asyncio.apply()
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 # Import Core Components
 from src.config import settings, init_settings
-from src.core.db import get_async_engine, get_sync_engine, init_vector_store
+from src.core.db import get_async_engine, get_sync_engine, init_vector_store, get_async_session
+from src.core.models.log import AuditLog
 from src.core.auditor import StyleAuditor
 from src.core.test_manager import TestManager
 from src.core import test_generator
@@ -201,7 +207,25 @@ async def audit_text(
         
         # Run the auditor (Async call)
         # Note: request.text might be empty
-        violations_dicts = await auditor_svc.check_text(request.text)
+        violations_dicts, log_data = await auditor_svc.check_text(request.text)
+        
+        # Save Log to DB
+        if log_data:
+            try:
+                async with get_async_session() as session:
+                    audit_log = AuditLog(
+                        test_id=UUID(request.test_id) if request.test_id else None,
+                        input_text=request.text,
+                        model_used=log_data["model_used"],
+                        llm_parameters=log_data["llm_parameters"],
+                        rag_parameters=log_data["rag_parameters"],
+                        interim_steps=log_data["interim_steps"],
+                        final_output=log_data["final_output"]
+                    )
+                    session.add(audit_log)
+                    # Session commits on exit of get_async_session context
+            except Exception as log_err:
+                logger.error(f"Failed to save audit log: {log_err}")
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
@@ -438,7 +462,25 @@ async def run_test(
         # Run audit
         start_time = datetime.now()
         # Use main auditor
-        detected = await auditor_svc.check_text(test_record.text)
+        detected, log_data = await auditor_svc.check_text(test_record.text)
+        
+        # Save Log to DB
+        if log_data:
+            try:
+                async with get_async_session() as session:
+                    audit_log = AuditLog(
+                        test_id=test_id,
+                        input_text=test_record.text,
+                        model_used=log_data["model_used"],
+                        llm_parameters=log_data["llm_parameters"],
+                        rag_parameters=log_data["rag_parameters"],
+                        interim_steps=log_data["interim_steps"],
+                        final_output=log_data["final_output"]
+                    )
+                    session.add(audit_log)
+            except Exception as log_err:
+                print(f"Failed to save audit log during test run: {log_err}")
+        
         execution_time = (datetime.now() - start_time).total_seconds()
         
         # Convert to DetectedViolation
