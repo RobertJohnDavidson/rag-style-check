@@ -1,8 +1,9 @@
 import os
 import asyncio
+from contextlib import asynccontextmanager
 from google.cloud.sql.connector import Connector, IPTypes
 from sqlalchemy import create_engine, Engine, text
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, AsyncSession, async_sessionmaker
 from sqlalchemy.pool import NullPool
 from llama_index.vector_stores.postgres import PGVectorStore
 from src.config import settings
@@ -51,6 +52,27 @@ def get_async_engine() -> AsyncEngine:
         "postgresql+asyncpg://",
         async_creator=get_async_conn,
     )
+
+# Create async session factory
+async_engine = get_async_engine()
+AsyncSessionFactory = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
+
+@asynccontextmanager
+async def get_async_session():
+    """Async context manager for database sessions."""
+    async with AsyncSessionFactory() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
 def init_vector_store(engine: Engine, async_engine: AsyncEngine) -> PGVectorStore:
     """Initializes the PGVectorStore with the given engine."""

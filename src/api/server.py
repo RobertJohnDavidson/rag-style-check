@@ -260,7 +260,6 @@ async def create_test(
             text=test.text,
             expected_violations=expected_violations,
             generation_method=test.generation_method,
-            notes=test.notes
         )
         return TestRecord(**test_dict)
     except Exception as e:
