@@ -215,10 +215,15 @@ def main():
     print(f"✅ Created index with {len(output_nodes)} nodes")
 
     # Debug: Check row count after ingestion
-    from sqlalchemy import text
+    from sqlalchemy import select, func, text
+    from sqlalchemy.schema import Table, MetaData
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(f"SELECT COUNT(*) FROM {settings.ACTUAL_TABLE_NAME}"))
+            # Use SQLAlchemy to query count
+            metadata = MetaData()
+            table = Table(settings.ACTUAL_TABLE_NAME, metadata, autoload_with=engine)
+            count_query = select(func.count()).select_from(table)
+            result = conn.execute(count_query)
             count = result.scalar()
             print(f"✅ Database contains {count} vectors")
     except Exception as e:

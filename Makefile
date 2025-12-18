@@ -1,5 +1,9 @@
 #run in dev mode
 dev:
+	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+# Force rebuild (use when deps change)
+dev-build:
 	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 
 # Run in Prod Simulation (No hot reload, no local keys)

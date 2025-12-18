@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy import String, Text, ARRAY, ForeignKey, Numeric, func, DateTime
+from sqlalchemy import Text, ARRAY, ForeignKey, Numeric, func, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import Base
@@ -14,7 +14,7 @@ class TestCase(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     label: Mapped[str] = mapped_column(Text, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
-    expected_violations: Mapped[List[str]] = mapped_column(ARRAY(Text), nullable=False)
+    expected_violations: Mapped[dict] = mapped_column(JSONB, nullable=False)
     generation_method: Mapped[str] = mapped_column(Text, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
