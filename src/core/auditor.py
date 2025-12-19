@@ -107,8 +107,21 @@ class StyleAuditor:
     def _get_llm_for_run(self, config: AuditorConfig) -> GoogleGenAI:
         """Get LLM instance configured for the run."""
         # Only create new one if config differs significantly from base
+        generation_config = {}
         if config.model_name == self.base_llm.model:
             return self.base_llm
+        if config.include_thinking:
+            # Gemini 2.x models use thinking_budget, 3.x+ use thinking_level
+            if "2." in config.model_name:
+                generation_config["thinking_config"] = {
+                    "includeThoughts": True,
+                    "thinking_budget": 2000  # Token budget for thinking
+                }
+            else:  # Gemini 3.x or higher
+                generation_config["thinking_config"] = {
+                    "includeThoughts": True,
+                    "thinking_level": "medium"  # Options: low, medium, high
+                }
             
         return GoogleGenAI(
             model=config.model_name,
