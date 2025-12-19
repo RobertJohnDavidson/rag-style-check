@@ -14,6 +14,15 @@
 	let editableViolations = $state<Violation[]>([]);
 	let approvedIndices = $state<Set<number>>(new Set());
 
+	function isComplete(v: Violation) {
+		return !!v.rule?.trim() && !!v.text?.trim() && !!v.reason?.trim() && !!v.source_url?.trim();
+	}
+
+	function canSave() {
+		if (approvedIndices.size === 0) return false;
+		return editableViolations.every((v, i) => !approvedIndices.has(i) || isComplete(v));
+	}
+
 	$effect(() => {
 		editableViolations = JSON.parse(JSON.stringify(violations));
 		approvedIndices = new Set(violations.map((_, i) => i));
@@ -40,11 +49,14 @@
 
 	function addViolation() {
 		editableViolations = [
-			...editableViolations,
-			{ text: '', rule: 'Custom Rule', reason: '', source_url: '' }
+			{ text: '', rule: 'Custom Rule', reason: '', source_url: '' },
+			...editableViolations
 		];
-		approvedIndices.add(editableViolations.length - 1);
-		approvedIndices = new Set(approvedIndices);
+		// shift existing approvals and approve the new top item
+		const shifted = new Set<number>();
+		approvedIndices.forEach(i => shifted.add(i + 1));
+		shifted.add(0);
+		approvedIndices = shifted;
 	}
 
 	function handleSave() {
@@ -61,7 +73,7 @@
 				<Plus class="mr-2 h-4 w-4" />
 				Add Violation
 			</Button.Root>
-			<Button.Root size="sm" onclick={handleSave} disabled={approvedIndices.size === 0}>
+			<Button.Root size="sm" onclick={handleSave} disabled={!canSave()}>
 				<Check class="mr-2 h-4 w-4" />
 				Save as Test Case
 			</Button.Root>
@@ -72,7 +84,9 @@
 		{#each editableViolations as v, i}
 			<Card.Root
 				class="relative transition-all {approvedIndices.has(i)
-					? 'border-l-4 border-l-green-500'
+					? isComplete(v)
+						? 'border-l-4 border-l-green-500'
+						: 'border-l-4 border-l-amber-500'
 					: 'opacity-50 grayscale'}"
 			>
 				<div class="absolute top-4 right-4 flex gap-2">
@@ -110,6 +124,15 @@
 						<Label.Root>Explanation</Label.Root>
 						<Textarea.Root bind:value={v.reason} placeholder="Why is this a violation?" rows={2} />
 					</div>
+
+					<div class="space-y-1">
+						<Label.Root>Style Guide Link</Label.Root>
+						<Input.Root bind:value={v.source_url} placeholder="https://..." type="url" />
+					</div>
+
+					{#if approvedIndices.has(i) && !isComplete(v)}
+						<p class="text-xs text-amber-600">Fill all fields before saving this violation.</p>
+					{/if}
 
 					{#if v.source_url}
 						<div class="pt-2 border-t border-border">

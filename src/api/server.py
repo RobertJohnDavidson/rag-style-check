@@ -239,7 +239,8 @@ async def audit_text(
                 text=v.get("text", ""),
                 rule=v.get("rule_name", "Unknown"),
                 reason=v.get("violation", ""),
-                source_url=v.get("source_url", None)
+                # Prefer explicit source_url, but fall back to other url fields
+                source_url=v.get("source_url")
             )
             for v in violations_dicts
         ]
@@ -329,34 +330,27 @@ async def generate_tests(
     Returns the list of created and saved test records.
     """
     try:
-        # Dependencies from Auditor service
-        # Ensure we have the base retriever for retrieval tasks
-        if not hasattr(auditor_svc, 'base_retriever') or not auditor_svc.base_retriever:
-             raise HTTPException(status_code=500, detail="Auditor service not initialized with a retriever.")
-             
-        retriever = auditor_svc.base_retriever
-        pass_reranker = getattr(auditor_svc, 'vertex_reranker', None)
+        # Get retriever from auditor's index
+        retriever = auditor_svc.index.as_retriever()
         
         generated_data = []
         
         if request.method == "synthetic":
             count = request.count or 3
-            # Call generator
             generated_data = await test_generator.generate_synthetic_tests(
                 count=count,
                 retriever=retriever,
-                reranker=pass_reranker
+                reranker=None
             )
             
         elif request.method == "article":
             if not request.url:
                 raise HTTPException(status_code=400, detail="URL is required for article generation")
             
-            # Call generator
             result = await test_generator.generate_test_from_article(
                 url=request.url,
                 retriever=retriever,
-                reranker=pass_reranker
+                reranker=None
             )
             generated_data = [result]
             

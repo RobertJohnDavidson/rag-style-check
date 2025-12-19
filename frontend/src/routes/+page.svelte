@@ -295,7 +295,7 @@
 				</Card.Root>
 
 				<!-- Results Section -->
-				{#if violations.length > 0 || testResult || error || success}
+				{#if processingTime > 0 || violations.length > 0 || testResult || error || success}
 					<section class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 						{#if error && !runningBulk}
 							<div
@@ -328,6 +328,15 @@
 									expectedCount={selectedTest?.expected_violations.length || 0}
 									detectedCount={violations.length}
 								/>
+							</div>
+						{/if}
+
+						{#if processingTime > 0 && violations.length === 0 && !error}
+							<div
+								class="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium border border-green-500/20"
+							>
+								<CircleCheckBig class="h-4 w-4" />
+								No violations found. You can still add custom violations or save as a test case.
 							</div>
 						{/if}
 

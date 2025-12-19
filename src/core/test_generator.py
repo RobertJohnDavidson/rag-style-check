@@ -11,7 +11,7 @@ from typing import List, Dict, Any
 from src.config import settings
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.core import Settings, QueryBundle
-from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.retrievers import BaseRetriever
 
 # Import reranker
 from src.core.reranker import VertexAIRerank
@@ -64,7 +64,7 @@ def generate_synthetic_paragraph(topic: str) -> str:
     return llm.complete(prompt).text.strip()
 
 
-def retrieve_relevant_rules(text: str, retriever: VectorIndexRetriever, reranker=None, top_k: int = 15) -> List[Dict]:
+def retrieve_relevant_rules(text: str, retriever: BaseRetriever, reranker=None, top_k: int = 15) -> List[Dict]:
     """Retrieve relevant style guide rules from vector DB."""
     # Simple full-text retrieval matching Auditor's approach
     # Note: Auditor uses async aretrieve, but this runs in a thread pool so sync retrieve is fine.
@@ -99,7 +99,7 @@ def retrieve_relevant_rules(text: str, retriever: VectorIndexRetriever, reranker
     return rules[:top_k]
 
 
-def inject_errors(text: str, num_errors: int, retriever: VectorIndexRetriever, reranker) -> Dict[str, Any]:
+def inject_errors(text: str, num_errors: int, retriever: BaseRetriever, reranker) -> Dict[str, Any]:
     """Injects style errors into text and returns test case."""
     llm = GoogleGenAI(
         model=settings.DEFAULT_MODEL,
@@ -182,7 +182,7 @@ Instructions:
         }
 
 
-async def generate_test_from_article(url: str, retriever: VectorIndexRetriever, reranker) -> Dict[str, Any]:
+async def generate_test_from_article(url: str, retriever: BaseRetriever, reranker) -> Dict[str, Any]:
     """Generate a test case from a CBC article."""
     # Run blocking operation in thread pool
     paragraphs = await asyncio.to_thread(fetch_cbc_article_text, url)
@@ -204,7 +204,7 @@ async def generate_test_from_article(url: str, retriever: VectorIndexRetriever, 
     }
 
 
-async def generate_synthetic_tests(count: int, retriever: VectorIndexRetriever, reranker) -> List[Dict[str, Any]]:
+async def generate_synthetic_tests(count: int, retriever: BaseRetriever, reranker) -> List[Dict[str, Any]]:
     """Generate synthetic test cases."""
     topics = [
         "politics and government policy",

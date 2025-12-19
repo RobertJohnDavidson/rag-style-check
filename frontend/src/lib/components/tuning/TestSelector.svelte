@@ -52,13 +52,27 @@
 </script>
 
 <div class="space-y-4">
-	<div class="relative">
-		<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-		<Input.Root
-			bind:value={search}
-			placeholder="Search tests by label or text..."
-			class="bg-background pl-9"
-		/>
+	<div class="flex gap-2 items-center">
+		<div class="relative flex-1">
+			<Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+			<Input.Root
+				bind:value={search}
+				placeholder="Search tests by label or text..."
+				class="bg-background pl-9"
+			/>
+		</div>
+		<button
+			type="button"
+			onclick={fetchTests}
+			class="inline-flex items-center gap-1 px-3 py-2 rounded-md border border-border text-xs font-semibold text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
+			disabled={loading}
+		>
+			{#if loading}
+				<LoaderCircle class="h-4 w-4 animate-spin" />
+			{:else}
+				↻ Refresh
+			{/if}
+		</button>
 	</div>
 
 	{#if loading}

@@ -412,10 +412,10 @@ class StyleAuditor:
                  details["llm_rerank_error"] = str(e)
 
         # 3. Rerank (Vertex)
-        if self.vertex_reranker and nodes and not config.use_llm_rerank:
+        if vertex_reranker and nodes and not config.use_llm_rerank:
             try:
                 query_bundle = QueryBundle(query_str=text)
-                nodes = self.vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                nodes = vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
                 # Apply final_top_k constraint
                 nodes = nodes[:config.final_top_k]
                 details["vertex_reranked_count"] = len(nodes)
