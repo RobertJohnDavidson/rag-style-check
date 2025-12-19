@@ -565,6 +565,27 @@ async def get_tuning_defaults():
     # Helper to return current settings as tuning defaults
     return TuningParameters()
 
+@app.get("/api/models", response_model=ModelListResponse)
+async def list_available_models_api():
+    models = [
+        ModelInfo(
+            name="gemini-2.5-flash", 
+            display_name="Gemini 2.5 Flash", 
+            supports_thinking=False
+        ),
+        ModelInfo(
+            name="gemini-2.5-flash-lite", 
+            display_name="Gemini 2.5 Flash Lite", 
+            supports_thinking=True
+        ),
+        ModelInfo(
+            name="gemini-3-flash-preview", 
+            display_name="Gemini 3.0 Flash Preview", 
+            supports_thinking=True
+        ),
+    ]
+    return ModelListResponse(models=models)
+
 # Serve frontend (catch-all)
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):

@@ -3,15 +3,16 @@
 	import { Button, Separator } from '$lib/components/ui';
 	import { X, Settings2, RotateCcw } from '@lucide/svelte';
 	import TuningParameters from './TuningParameters.svelte';
-	import type { TuningParameters as TuningParams } from '$lib/types';
+	import type { TuningParameters as TuningParams, ModelInfo } from '$lib/types';
 	import { getTuningDefaults } from '$lib/api';
 
 	interface Props {
 		isOpen: boolean;
 		parameters: TuningParams;
+		models: ModelInfo[];
 	}
 
-	let { isOpen = $bindable(), parameters = $bindable() }: Props = $props();
+	let { isOpen = $bindable(), parameters = $bindable(), models = [] }: Props = $props();
 
 	async function resetDefaults() {
 		const { data } = await getTuningDefaults();
@@ -61,7 +62,7 @@
 
 			<!-- Content -->
 			<div class="flex-1 overflow-y-auto px-6 py-6 custom-scrollbar">
-				<TuningParameters bind:parameters />
+				<TuningParameters bind:parameters {models} />
 			</div>
 
 			<!-- Footer -->

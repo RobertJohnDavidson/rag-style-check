@@ -88,6 +88,10 @@ class TuningParameters(BaseModel):
         le=100.0,
         description="Minimum confidence score for violations"
     )
+    include_thinking: bool = Field(
+        default=False,
+        description="Include LLM thinking process in the output"
+    )
 
 
 class TestUpdateInput(BaseModel):

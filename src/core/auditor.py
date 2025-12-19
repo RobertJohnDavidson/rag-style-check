@@ -9,6 +9,7 @@ from llama_index.core.retrievers import BaseRetriever, VectorIndexRetriever, Que
 from llama_index.core.postprocessor import LLMRerank
 from llama_index.core.schema import NodeWithScore
 from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.core import PromptTemplate
 
 # Custom Imports
 from src.config import settings
@@ -45,6 +46,7 @@ class Violation(BaseModel):
     source_url: Optional[str] = Field(description="URL of the rule", default=None)
 
 class AuditResult(BaseModel):
+    thinking: Optional[str] = Field(description="Chain of thought or reasoning process", default=None)
     violations: List[Violation] = Field(default_factory=list)
     confident: bool = Field(description="True if the agent is certain about findings")
     needs_more_context: bool = Field(description="True if more rules are needed")
@@ -63,6 +65,7 @@ class AuditorConfig(BaseModel):
     confidence_threshold: float = settings.DEFAULT_CONFIDENCE_THRESHOLD
     use_query_fusion: bool = True
     use_llm_rerank: bool = True
+    include_thinking: bool = False
 
 class StyleAuditor:
     """
@@ -83,72 +86,96 @@ class StyleAuditor:
     ):
         """
         Initialize the Auditor.
-        
-        Args:
-            llm: Configured LLM instance (must support async/structured).
-            retriever: Pre-configured retriever (optional).
-            index: VectorStoreIndex to build retriever from (if retriever not provided).
-            config: Auditor configuration parameters.
         """
         self.config = config or AuditorConfig()
-        self.llm = llm
+        self.base_llm = llm # Default/Base Audit LLM
+        self.index = index
+        self.external_retriever = retriever
+
+        # Fixed Rerank LLM (always lite)
+        self.rerank_llm = GoogleGenAI(
+            model=settings.RERANK_MODEL,
+            temperature=0.0, # Stable for reranking
+            vertexai_config={
+                "project": settings.PROJECT_ID,
+                "location": settings.LLM_REGION
+            }
+        )
         
-        # Setup Retriever
-        if retriever:
-            self.base_retriever = retriever
-        elif index:
-            self.base_retriever = VectorIndexRetriever(
-                index=index,
-                similarity_top_k=self.config.initial_retrieval_count,
+        logger.info(f"🔧 Auditor initialized with Base Model: {self.base_llm.model}")
+        logger.info(f"🔧 Rerank Model: {settings.RERANK_MODEL}")
+
+    def _get_llm_for_run(self, config: AuditorConfig) -> GoogleGenAI:
+        """Get LLM instance configured for the run."""
+        # Only create new one if config differs significantly from base
+        if config.model_name == self.base_llm.model and abs(config.temperature - self.base_llm.temperature) < 0.01:
+            return self.base_llm
+            
+        return GoogleGenAI(
+            model=config.model_name,
+            temperature=config.temperature,
+            vertexai_config={
+                "project": settings.PROJECT_ID,
+                "location": settings.LLM_REGION
+            }
+        )
+
+    def _get_retriever_for_run(self, config: AuditorConfig) -> BaseRetriever:
+        """Get retriever configured for the run. Always uses rerank_llm for query fusion."""
+        # 1. Base Retriever
+        if self.external_retriever:
+            base_retriever = self.external_retriever
+            if hasattr(base_retriever, "similarity_top_k"):
+                base_retriever.similarity_top_k = config.initial_retrieval_count
+        elif self.index:
+            base_retriever = VectorIndexRetriever(
+                index=self.index,
+                similarity_top_k=config.initial_retrieval_count,
                 vector_store_query_mode="hybrid",
                 sparse_top_k=10
             )
         else:
-            raise ValueError("Must provide either 'retriever' or 'index' to StyleAuditor.")
+            raise ValueError("No retriever or index available.")
 
-        # Setup Advanced Retriever (Query Fusion)
-        if self.config.use_query_fusion:
-            self.retriever = QueryFusionRetriever(
-                [self.base_retriever],
-                llm=self.llm,
-                similarity_top_k=self.config.initial_retrieval_count,
+        # 2. Query Fusion (Advanced) - Always use rerank_llm for step efficiency
+        if config.use_query_fusion:
+            return QueryFusionRetriever(
+                [base_retriever],
+                llm=self.rerank_llm,
+                similarity_top_k=config.initial_retrieval_count,
                 num_queries=3,
                 mode="reciprocal_rerank",
-                use_async=True, # Enable async query gen
+                use_async=True,
                 verbose=True,
                 query_gen_prompt=PROMPT_QUERY_GEN
             )
-        else:
-            self.retriever = self.base_retriever
+        return base_retriever
 
-        # Setup Rerankers
-        self.llm_reranker = None
-        if self.config.use_llm_rerank:
-            self.llm_reranker = LLMRerank(
+    def _get_rerankers_for_run(self, config: AuditorConfig):
+        """Get rerankers configured for the run. Always uses rerank_llm for stability."""
+        llm_reranker = None
+        if config.use_llm_rerank:
+            llm_reranker = LLMRerank(
                 choice_batch_size=10,
-                top_n=self.config.final_top_k,
-                llm=self.llm
+                top_n=config.final_top_k,
+                llm=self.rerank_llm
             )
 
-        self.vertex_reranker = None
+        vertex_reranker = None
         if VertexAIRerank:
-            self.vertex_reranker = VertexAIRerank(
+            vertex_reranker = VertexAIRerank(
                 project_id=settings.PROJECT_ID,
                 location_id=settings.LLM_REGION,
                 ranking_config="default_ranking_config",
-                top_n=self.config.final_top_k
+                top_n=config.final_top_k
             )
-
-        logger.info(f"🔧 Auditor initialized with Model: {self.config.model_name}")
+            
+        return llm_reranker, vertex_reranker
 
     async def check_text(self, text: str, tuning_params: Optional[Any] = None) -> tuple[List[Dict], Dict]:
         """
         Main Async Entry Point.
         Returns a tuple of (violations, log_data).
-        
-        Args:
-            text: Input text to audit.
-            tuning_params: Optional config overrides (TuningParameters or Dict).
         """
         # Resolve config for this run
         run_config = self.config
@@ -159,6 +186,11 @@ class StyleAuditor:
                 overrides = tuning_params
             run_config = self.config.model_copy(update=overrides)
 
+        # Resolve run-scoped tools
+        llm = self._get_llm_for_run(run_config)
+        retriever = self._get_retriever_for_run(run_config)
+        llm_reranker, vertex_reranker = self._get_rerankers_for_run(run_config)
+
         if not text.strip():
             return [], {}
 
@@ -168,9 +200,16 @@ class StyleAuditor:
 
         logger.info(f"🔍 Auditing {len(paragraphs)} paragraph(s)...")
 
-        # Process paragraphs allowed (sequentially or parallel - sequential is safer for rate limits)
+        # Process paragraphs
         for i, paragraph in enumerate(paragraphs):
-            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(paragraph, run_config)
+            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(
+                paragraph, 
+                run_config,
+                llm=llm,
+                retriever=retriever,
+                llm_reranker=llm_reranker,
+                vertex_reranker=vertex_reranker
+            )
             if paragraph_violations:
                 all_violations.extend(paragraph_violations)
             interim_steps.append({
@@ -185,7 +224,8 @@ class StyleAuditor:
         llm_params = {
             "temperature": run_config.temperature,
             "max_agent_iterations": run_config.max_agent_iterations,
-            "confidence_threshold": run_config.confidence_threshold
+            "confidence_threshold": run_config.confidence_threshold,
+            "include_thinking": run_config.include_thinking
         }
         rag_params = {
             "initial_retrieval_count": run_config.initial_retrieval_count,
@@ -213,7 +253,15 @@ class StyleAuditor:
         chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
         return chunks if chunks else [text.strip()]
 
-    async def _audit_paragraph_agentic(self, paragraph: str, config: AuditorConfig) -> tuple[List[Dict], List[Dict]]:
+    async def _audit_paragraph_agentic(
+        self, 
+        paragraph: str, 
+        config: AuditorConfig,
+        llm: GoogleGenAI,
+        retriever: BaseRetriever,
+        llm_reranker: Optional[LLMRerank] = None,
+        vertex_reranker: Optional[Any] = None
+    ) -> tuple[List[Dict], List[Dict]]:
         """
         Agentic audit loop with async execution and structured output.
         Returns (violations, steps).
@@ -225,9 +273,13 @@ class StyleAuditor:
 
         # 1. Advanced Retrieval
         logger.info("🔍 Retrieving rules...")
-        # Capture tags and retrieval nodes
-        # Note: _retrieve_advanced currently returns dicts. Let's capture the process.
-        contexts, retrieval_details = await self._retrieve_advanced_with_details(paragraph, config)
+        contexts, retrieval_details = await self._retrieve_advanced_with_details(
+            paragraph, 
+            config,
+            retriever=retriever,
+            llm_reranker=llm_reranker,
+            vertex_reranker=vertex_reranker
+        )
         steps.append({
             "type": "retrieval",
             "details": retrieval_details
@@ -244,13 +296,12 @@ class StyleAuditor:
             logger.info(f"--- Iteration {iteration + 1}/{config.max_agent_iterations} ---")
             
             # Build Prompt
-            prompt = self._build_prompt(paragraph, contexts, violations, iteration)
+            prompt = self._build_prompt(paragraph, contexts, violations, iteration, config)
             
             # Call LLM with Structured Output
             try:
-                from llama_index.core import PromptTemplate
                 tmpl = PromptTemplate(prompt)
-                response_obj = await self.llm.astructured_predict(AuditResult, tmpl)
+                response_obj = await llm.astructured_predict(AuditResult, tmpl)
             except Exception as e:
                 logger.error(f"Structured predict failed: {e}")
                 steps.append({
@@ -287,7 +338,13 @@ class StyleAuditor:
             # Handle More Context
             if response_obj.additional_queries:
                 logger.info(f"🔍 Requesting more context: {response_obj.additional_queries}")
-                new_ctx = await self._collect_additional_contexts(response_obj.additional_queries, config)
+                new_ctx = await self._collect_additional_contexts(
+                    response_obj.additional_queries, 
+                    config,
+                    retriever=retriever,
+                    llm_reranker=llm_reranker,
+                    vertex_reranker=vertex_reranker
+                )
                 steps.append({
                     "type": "additional_retrieval",
                     "queries": response_obj.additional_queries,
@@ -297,7 +354,14 @@ class StyleAuditor:
 
         return deduplicate_violations(violations), steps
 
-    async def _retrieve_advanced_with_details(self, text: str, config: AuditorConfig) -> tuple[List[Dict], Dict]:
+    async def _retrieve_advanced_with_details(
+        self, 
+        text: str, 
+        config: AuditorConfig,
+        retriever: BaseRetriever,
+        llm_reranker: Optional[LLMRerank] = None,
+        vertex_reranker: Optional[Any] = None
+    ) -> tuple[List[Dict], Dict]:
         """Async Advanced Retrieval with detailed logging."""
         details = {}
         # 0. Classify Tags (Optional Optimization)
@@ -315,11 +379,7 @@ class StyleAuditor:
 
         # 1. Retrieve
         try:
-            # Note: Overriding similarity_top_k at runtime if supported by the retriever type
-            # VectorIndexRetriever often uses self._similarity_top_k.
-            # For dynamic tuning, we could re-initialize but for now let's use the retriever as-is.
-            # Future: add logic to handle dynamic retrieve counts if LlamaIndex supports it better.
-            nodes = await self.retriever.aretrieve(query_text)
+            nodes = await retriever.aretrieve(query_text)
             details["retrieved_nodes_count"] = len(nodes)
         except Exception as e:
             logger.error(f"Retrieval failed: {e}")
@@ -327,14 +387,14 @@ class StyleAuditor:
             return [], details
 
         # 2. Rerank (LLM)
-        if config.use_llm_rerank and self.llm_reranker and nodes:
+        if config.use_llm_rerank and llm_reranker and nodes:
              try:
                  query_bundle = QueryBundle(query_str=text) 
                  # Slice to the desired top_n if reranker doesn't handle it
-                 if hasattr(self.llm_reranker, "apostprocess_nodes"):
-                    nodes = await self.llm_reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
+                 if hasattr(llm_reranker, "apostprocess_nodes"):
+                    nodes = await llm_reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
                  else:
-                    nodes = self.llm_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                    nodes = llm_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
                  
                  # Apply final_top_k constraint
                  nodes = nodes[:config.final_top_k]
@@ -359,10 +419,8 @@ class StyleAuditor:
         details["results"] = results
         return results, details
 
-        return self._nodes_to_dicts(nodes, source_type="advanced_retrieval")
-
     async def _classify_text_async(self, text: str) -> List[str]:
-        """Classify text using LLM."""
+        """Classify text using rerank LLM for speed."""
         if len(text.split()) < 5:
             return []
         
@@ -371,27 +429,32 @@ class StyleAuditor:
             text_snippet=text[:1000]
         )
         try:
-            resp = await self.llm.acomplete(prompt_str)
+            resp = await self.rerank_llm.acomplete(prompt_str)
             found = [t.strip() for t in resp.text.split(',')]
-            return found # In real version, filter against known tags
+            return found
         except Exception:
             return []
 
-    async def _collect_additional_contexts(self, queries: List[str], config: AuditorConfig) -> List[Dict]:
-        """Retrieve additional contexts for specific queries."""
-        results = []
-        # Simple parallel execution
-        tasks = [self.base_retriever.aretrieve(q) for q in queries]
-        node_lists = await asyncio.gather(*tasks, return_exceptions=True)
-        
-        for nodes in node_lists:
-            if isinstance(nodes, list):
-                # We can filter/rerank here strictly if needed
-                # For speed, just take top K from the config
-                top_nodes = nodes[:config.final_top_k]
-                results.extend(self._nodes_to_dicts(top_nodes, source_type="additional"))
-        
-        return results
+    async def _collect_additional_contexts(
+        self, 
+        queries: List[str], 
+        config: AuditorConfig,
+        retriever: BaseRetriever,
+        llm_reranker: Optional[LLMRerank] = None,
+        vertex_reranker: Optional[Any] = None
+    ) -> List[Dict]:
+        """Collect more rules based on agent queries."""
+        all_results = []
+        for q in queries:
+            results, _ = await self._retrieve_advanced_with_details(
+                q, 
+                config,
+                retriever=retriever,
+                llm_reranker=llm_reranker,
+                vertex_reranker=vertex_reranker
+            )
+            all_results.extend(results)
+        return all_results
 
     def _nodes_to_dicts(self, nodes: List[NodeWithScore], source_type="retrieved") -> List[Dict]:
         out = []
@@ -408,7 +471,7 @@ class StyleAuditor:
             })
         return out
 
-    def _build_prompt(self, paragraph, contexts, violations, iteration):
+    def _build_prompt(self, paragraph, contexts, violations, iteration, config: AuditorConfig):
         context_lines = [
             f"{c['id']} | Rule: {c['term']}\nGuideline: {c['text']}" 
             for c in contexts
@@ -419,11 +482,12 @@ class StyleAuditor:
         if iteration > 0 and violations:
              reflection_block = f"PREVIOUS FINDINGS: {len(violations)} violations found so far."
 
+        system_prompt = PROMPT_AUDIT_SYSTEM
+        if config.include_thinking:
+            system_prompt += "\nExplain your thinking process clearly in the 'thinking' field before listing violations."
+
         # Return the FORMATTED prompt string
-        # Note: We return the string, but `astructured_predict` needs a Template usually.
-        # But wait, earlier we passed this result to `PromptTemplate`.
-        # So we just return the string here.
-        return PROMPT_AUDIT_SYSTEM + "\n" + PROMPT_AUDIT_USER_TEMPLATE.format(
+        return system_prompt + "\n" + PROMPT_AUDIT_USER_TEMPLATE.format(
             paragraph=paragraph,
             context_block=context_block,
             reflection_block=reflection_block

@@ -26,6 +26,7 @@ class AppSettings(BaseModel):
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
     EMBED_DIM: int = 768
     DEFAULT_MODEL: str = os.getenv("MODEL", "gemini-2.5-flash")
+    RERANK_MODEL: str = os.getenv("RERANK_MODEL", "gemini-2.5-flash-lite")
     # HNSW Index creation parameters (used during table setup)
     HNSW_INDEX_KWARGS: dict = {
         "hnsw_m": 24,

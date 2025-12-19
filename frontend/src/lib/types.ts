@@ -30,6 +30,17 @@ export interface TuningParameters {
 	min_sentence_length: number;
 	max_agent_iterations: number;
 	confidence_threshold: number;
+	include_thinking: boolean;
+}
+
+export interface ModelInfo {
+	name: string;
+	display_name: string;
+	supports_thinking: boolean;
+}
+
+export interface ModelListResponse {
+	models: ModelInfo[];
 }
 
 export interface TestMetrics {

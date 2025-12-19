@@ -16,9 +16,10 @@
 		createTest, 
 		generateText, 
 		getTest,
-		getTuningDefaults 
+		getTuningDefaults,
+		getModels
 	} from '$lib/api';
-	import type { Violation, Test, TestResult, TuningParameters } from '$lib/types';
+	import type { Violation, Test, TestResult, TuningParameters, ModelInfo } from '$lib/types';
 
 	// Main State
 	let text = $state('');
@@ -40,6 +41,7 @@
 	
 	// Tuning State
 	let showTuning = $state(false);
+	let models = $state<ModelInfo[]>([]);
 	let tuningParams = $state<TuningParameters>({
 		model_name: 'gemini-2.5-flash',
 		temperature: 0.1,
@@ -49,7 +51,8 @@
 		aggregated_rule_limit: 40,
 		min_sentence_length: 5,
 		max_agent_iterations: 3,
-		confidence_threshold: 10.0
+		confidence_threshold: 10.0,
+		include_thinking: false
 	});
 
 	async function handleAudit() {
@@ -186,10 +189,16 @@
 	onMount(async () => {
 		isDark = document.documentElement.classList.contains('dark');
 		
-		// Load tuning defaults
-		const { data: defaults } = await getTuningDefaults();
-		if (defaults) {
-			tuningParams = defaults;
+		const [defaultsRes, modelsRes] = await Promise.all([
+			getTuningDefaults(),
+			getModels()
+		]);
+
+		if (defaultsRes.data) {
+			tuningParams = defaultsRes.data;
+		}
+		if (modelsRes.data) {
+			models = modelsRes.data;
 		}
 	});
 </script>
@@ -399,7 +408,7 @@
 		</Tabs.Root>
 	</main>
 
-	<TuningDrawer bind:isOpen={showTuning} bind:parameters={tuningParams} />
+	<TuningDrawer bind:isOpen={showTuning} bind:parameters={tuningParams} {models} />
 </div>
 
 <style>

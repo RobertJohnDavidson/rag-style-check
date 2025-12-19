@@ -1,26 +1,19 @@
 <script lang="ts">
-	import { Select, Slider, Label } from '$lib/components/ui';
-	import type { TuningParameters } from '$lib/types';
-
-	interface ModelOption {
-		value: string;
-		label: string;
-	}
+	import { Select, Slider, Label, Switch } from '$lib/components/ui';
+	import type { TuningParameters, ModelInfo } from '$lib/types';
 
 	interface Props {
 		parameters: TuningParameters;
 		disabled?: boolean;
 		class?: string;
-		models?: ModelOption[];
+		models?: ModelInfo[];
 	}
 
 	let { 
 		parameters = $bindable(), 
 		disabled = false,
 		class: className = '',
-		models = [
-			{ value: 'models/gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-		]
+		models = []
 	}: Props = $props();
 
 	// Helper for Slider array binding
@@ -38,14 +31,27 @@
 			>
 			<Select.Root type="single" bind:value={parameters.model_name} {disabled}>
 				<Select.Trigger class="w-full h-11">
-					{models.find((m) => m.value === parameters.model_name)?.label || 'Select a model'}
+					{models.find((m) => m.name === parameters.model_name)?.display_name || 'Select a model'}
 				</Select.Trigger>
-				<Select.Content>
+				<Select.Content class="z-100">
 					{#each models as model}
-						<Select.Item value={model.value} label={model.label} />
+						<Select.Item value={model.name} label={model.display_name} />
 					{/each}
 				</Select.Content>
 			</Select.Root>
+		</div>
+
+		<!-- Thinking Process Toggle -->
+		<div
+			class="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50"
+		>
+			<div class="space-y-0.5">
+				<Label.Root class="text-sm font-medium">Include Thinking</Label.Root>
+				<p class="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">
+					Will increase cost and time
+				</p>
+			</div>
+			<Switch.Root bind:checked={parameters.include_thinking} {disabled} />
 		</div>
 
 		<div class="h-px bg-border my-2"></div>

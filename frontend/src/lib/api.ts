@@ -1,5 +1,5 @@
 // API client with fetch wrappers for all endpoints
-import type { Test, TestResult, TuningParameters, PaginatedResponse, GenerateTestsRequest, GenerateTestsResponse, Violation } from './types';
+import type { Test, TestResult, TuningParameters, PaginatedResponse, GenerateTestsRequest, GenerateTestsResponse, Violation, ModelInfo, ModelListResponse } from './types';
 import { TestInputSchema, TuningParametersSchema } from './schemas';
 
 // Generic API response wrapper
@@ -200,6 +200,22 @@ export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>
 		return { data };
 	} catch (err) {
 		return { error: err instanceof Error ? err.message : 'Failed to load tuning defaults' };
+	}
+}
+
+// Get available models
+export async function getModels(): Promise<ApiResponse<ModelInfo[]>> {
+	try {
+		const response = await fetch(`${getApiBase()}/api/models`);
+
+		if (!response.ok) {
+			throw new Error('Failed to load models');
+		}
+
+		const data: ModelListResponse = await response.json();
+		return { data: data.models };
+	} catch (err) {
+		return { error: err instanceof Error ? err.message : 'Failed to load models' };
 	}
 }
 

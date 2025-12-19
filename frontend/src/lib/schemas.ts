@@ -28,7 +28,8 @@ export const TuningParametersSchema = z.object({
 	aggregated_rule_limit: z.number().int().min(10).max(100),
 	min_sentence_length: z.number().int().min(1).max(50),
 	max_agent_iterations: z.number().int().min(1).max(10),
-	confidence_threshold: z.number().min(0)
+	confidence_threshold: z.number().min(0),
+	include_thinking: z.boolean().default(false)
 });
 
 // Validation schema for CBC article URLs
