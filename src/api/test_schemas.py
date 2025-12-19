@@ -37,7 +37,7 @@ class TestInput(BaseModel):
 class TuningParameters(BaseModel):
     """Configurable parameters for running tests"""
     model_name: str = Field(
-        default="models/gemini-1.5-flash",
+        default="gemini-2.5-flash",
         description="LLM model to use for auditing"
     )
     temperature: float = Field(

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Test, TestResult } from '$lib/types';
 	import { Card, Button, Alert } from '$lib/components/ui';
-	import { TuningParameters, MetricsDisplay } from '$lib/components/tests';
+	import { MetricsDisplay } from '$lib/components/tests';
+	import { TuningParameters } from '$lib/components/tuning';
 	import { getTest as apiGetTest, runTest as apiRunTest } from '$lib/api';
 	import { LoaderCircle, Play } from '@lucide/svelte';
 

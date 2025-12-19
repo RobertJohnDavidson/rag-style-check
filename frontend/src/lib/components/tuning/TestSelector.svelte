@@ -6,23 +6,39 @@
 	import type { Test } from '$lib/types';
 
 	interface Props {
-		onSelect: (test: Test) => void;
+		onSelect?: (test: Test) => void;
+		onSelectionChange?: (selectedIds: string[]) => void;
+		multiSelect?: boolean;
 	}
 
-	let { onSelect }: Props = $props();
+	let { 
+		onSelect, 
+		onSelectionChange, 
+		multiSelect = false 
+	}: Props = $props();
 
 	let tests = $state<Test[]>([]);
+	let selectedIds = $state<string[]>([]);
 	let loading = $state(false);
 	let search = $state('');
 	let debounceTimer: any;
 
 	async function fetchTests() {
 		loading = true;
-		const { data, error } = await loadTests({ search, page_size: 10 });
+		const { data, error } = await loadTests({ search, page_size: 20 });
 		if (data) {
 			tests = data.tests;
 		}
 		loading = false;
+	}
+
+	function toggleSelection(testId: string) {
+		if (selectedIds.includes(testId)) {
+			selectedIds = selectedIds.filter(id => id !== testId);
+		} else {
+			selectedIds = [...selectedIds, testId];
+		}
+		onSelectionChange?.(selectedIds);
 	}
 
 	$effect(() => {
@@ -50,15 +66,31 @@
 			<LoaderCircle class="h-6 w-6 animate-spin text-muted-foreground" />
 		</div>
 	{:else if tests.length > 0}
-		<div class="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+		<div class="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
 			{#each tests as test}
-				<button
-					onclick={() => onSelect(test)}
-					class="w-full text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-all group"
-				>
-					<div class="font-bold text-sm text-foreground group-hover:text-primary">{test.label}</div>
-					<div class="text-xs text-muted-foreground truncate">{test.text}</div>
-				</button>
+				<div class="flex items-center gap-2 group">
+					{#if multiSelect}
+						<input
+							type="checkbox"
+							checked={selectedIds.includes(test.id)}
+							onchange={() => toggleSelection(test.id)}
+							class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary cursor-pointer"
+						/>
+					{/if}
+					<button
+						onclick={() => (multiSelect ? toggleSelection(test.id) : onSelect?.(test))}
+						class="flex-1 text-left p-3 rounded-lg border border-border hover:bg-accent/50 transition-all"
+						class:bg-accent={selectedIds.includes(test.id)}
+						class:border-primary={selectedIds.includes(test.id)}
+					>
+						<div
+							class="font-bold text-sm text-foreground group-hover:text-primary transition-colors"
+						>
+							{test.label}
+						</div>
+						<div class="text-xs text-muted-foreground truncate">{test.text}</div>
+					</button>
+				</div>
 			{/each}
 		</div>
 	{:else}

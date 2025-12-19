@@ -66,3 +66,9 @@ USER PARAGRAPH:
 
 {reflection_block}
 """
+
+PROMPT_GENERATE_NEWS_TEXT = (
+    "Write a single, neutral, high-quality news paragraph about a timely and realistic topic "
+    "The paragraph should be approximately 3-5 sentences long and written in a professional journalistic style. It should be in the style of CBC News."
+    "Focus on clear, concise, and objective reporting."
+)

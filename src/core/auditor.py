@@ -141,11 +141,24 @@ class StyleAuditor:
 
         logger.info(f"🔧 Auditor initialized with Model: {self.config.model_name}")
 
-    async def check_text(self, text: str) -> tuple[List[Dict], Dict]:
+    async def check_text(self, text: str, tuning_params: Optional[Any] = None) -> tuple[List[Dict], Dict]:
         """
         Main Async Entry Point.
         Returns a tuple of (violations, log_data).
+        
+        Args:
+            text: Input text to audit.
+            tuning_params: Optional config overrides (TuningParameters or Dict).
         """
+        # Resolve config for this run
+        run_config = self.config
+        if tuning_params:
+            if hasattr(tuning_params, 'model_dump'):
+                overrides = tuning_params.model_dump(exclude_unset=True)
+            else:
+                overrides = tuning_params
+            run_config = self.config.model_copy(update=overrides)
+
         if not text.strip():
             return [], {}
 
@@ -157,7 +170,7 @@ class StyleAuditor:
 
         # Process paragraphs allowed (sequentially or parallel - sequential is safer for rate limits)
         for i, paragraph in enumerate(paragraphs):
-            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(paragraph)
+            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(paragraph, run_config)
             if paragraph_violations:
                 all_violations.extend(paragraph_violations)
             interim_steps.append({
@@ -170,22 +183,22 @@ class StyleAuditor:
         
         # Categorize parameters
         llm_params = {
-            "temperature": self.config.temperature,
-            "max_agent_iterations": self.config.max_agent_iterations,
-            "confidence_threshold": self.config.confidence_threshold
+            "temperature": run_config.temperature,
+            "max_agent_iterations": run_config.max_agent_iterations,
+            "confidence_threshold": run_config.confidence_threshold
         }
         rag_params = {
-            "initial_retrieval_count": self.config.initial_retrieval_count,
-            "final_top_k": self.config.final_top_k,
-            "rerank_score_threshold": self.config.rerank_score_threshold,
-            "aggregated_rule_limit": self.config.aggregated_rule_limit,
-            "use_query_fusion": self.config.use_query_fusion,
-            "use_llm_rerank": self.config.use_llm_rerank,
-            "min_sentence_length": self.config.min_sentence_length
+            "initial_retrieval_count": run_config.initial_retrieval_count,
+            "final_top_k": run_config.final_top_k,
+            "rerank_score_threshold": run_config.rerank_score_threshold,
+            "aggregated_rule_limit": run_config.aggregated_rule_limit,
+            "use_query_fusion": run_config.use_query_fusion,
+            "use_llm_rerank": run_config.use_llm_rerank,
+            "min_sentence_length": run_config.min_sentence_length
         }
 
         log_data = {
-            "model_used": self.config.model_name,
+            "model_used": run_config.model_name,
             "llm_parameters": llm_params,
             "rag_parameters": rag_params,
             "interim_steps": interim_steps,
@@ -200,21 +213,21 @@ class StyleAuditor:
         chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
         return chunks if chunks else [text.strip()]
 
-    async def _audit_paragraph_agentic(self, paragraph: str) -> tuple[List[Dict], List[Dict]]:
+    async def _audit_paragraph_agentic(self, paragraph: str, config: AuditorConfig) -> tuple[List[Dict], List[Dict]]:
         """
         Agentic audit loop with async execution and structured output.
         Returns (violations, steps).
         """
         steps = []
         # SKIP very short paragraphs
-        if len(paragraph.split()) < self.config.min_sentence_length:
+        if len(paragraph.split()) < config.min_sentence_length:
             return [], steps
 
         # 1. Advanced Retrieval
         logger.info("🔍 Retrieving rules...")
         # Capture tags and retrieval nodes
         # Note: _retrieve_advanced currently returns dicts. Let's capture the process.
-        contexts, retrieval_details = await self._retrieve_advanced_with_details(paragraph)
+        contexts, retrieval_details = await self._retrieve_advanced_with_details(paragraph, config)
         steps.append({
             "type": "retrieval",
             "details": retrieval_details
@@ -222,13 +235,13 @@ class StyleAuditor:
         
         # Deduplicate contexts
         unique_contexts = {c['id']: c for c in contexts}.values()
-        contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
+        contexts = list(unique_contexts)[:config.aggregated_rule_limit]
         
         violations = []
         
         # 2. Agent Loop
-        for iteration in range(self.config.max_agent_iterations):
-            logger.info(f"--- Iteration {iteration + 1}/{self.config.max_agent_iterations} ---")
+        for iteration in range(config.max_agent_iterations):
+            logger.info(f"--- Iteration {iteration + 1}/{config.max_agent_iterations} ---")
             
             # Build Prompt
             prompt = self._build_prompt(paragraph, contexts, violations, iteration)
@@ -274,7 +287,7 @@ class StyleAuditor:
             # Handle More Context
             if response_obj.additional_queries:
                 logger.info(f"🔍 Requesting more context: {response_obj.additional_queries}")
-                new_ctx = await self._collect_additional_contexts(response_obj.additional_queries)
+                new_ctx = await self._collect_additional_contexts(response_obj.additional_queries, config)
                 steps.append({
                     "type": "additional_retrieval",
                     "queries": response_obj.additional_queries,
@@ -284,7 +297,7 @@ class StyleAuditor:
 
         return deduplicate_violations(violations), steps
 
-    async def _retrieve_advanced_with_details(self, text: str) -> tuple[List[Dict], Dict]:
+    async def _retrieve_advanced_with_details(self, text: str, config: AuditorConfig) -> tuple[List[Dict], Dict]:
         """Async Advanced Retrieval with detailed logging."""
         details = {}
         # 0. Classify Tags (Optional Optimization)
@@ -302,9 +315,10 @@ class StyleAuditor:
 
         # 1. Retrieve
         try:
-            # Note: QueryFusionRetriever might generate inner queries.
-            # We can't easily capture them unless we subclass or inspect.
-            # For now, capture the result nodes.
+            # Note: Overriding similarity_top_k at runtime if supported by the retriever type
+            # VectorIndexRetriever often uses self._similarity_top_k.
+            # For dynamic tuning, we could re-initialize but for now let's use the retriever as-is.
+            # Future: add logic to handle dynamic retrieve counts if LlamaIndex supports it better.
             nodes = await self.retriever.aretrieve(query_text)
             details["retrieved_nodes_count"] = len(nodes)
         except Exception as e:
@@ -313,23 +327,29 @@ class StyleAuditor:
             return [], details
 
         # 2. Rerank (LLM)
-        if self.config.use_llm_rerank and self.llm_reranker and nodes:
+        if config.use_llm_rerank and self.llm_reranker and nodes:
              try:
                  query_bundle = QueryBundle(query_str=text) 
+                 # Slice to the desired top_n if reranker doesn't handle it
                  if hasattr(self.llm_reranker, "apostprocess_nodes"):
                     nodes = await self.llm_reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
                  else:
                     nodes = self.llm_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                 
+                 # Apply final_top_k constraint
+                 nodes = nodes[:config.final_top_k]
                  details["llm_reranked_count"] = len(nodes)
              except Exception as e:
                  logger.warning(f"LLM Rerank failed: {e}")
                  details["llm_rerank_error"] = str(e)
 
         # 3. Rerank (Vertex)
-        if self.vertex_reranker and nodes and not self.config.use_llm_rerank:
+        if self.vertex_reranker and nodes and not config.use_llm_rerank:
             try:
                 query_bundle = QueryBundle(query_str=text)
                 nodes = self.vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                # Apply final_top_k constraint
+                nodes = nodes[:config.final_top_k]
                 details["vertex_reranked_count"] = len(nodes)
             except Exception as e:
                  logger.warning(f"Vertex Rerank failed: {e}")
@@ -338,49 +358,6 @@ class StyleAuditor:
         results = self._nodes_to_dicts(nodes, source_type="advanced_retrieval")
         details["results"] = results
         return results, details
-
-    async def _retrieve_advanced(self, text: str) -> List[Dict]:
-        """Async Advanced Retrieval."""
-        # 0. Classify Tags (Optional Optimization)
-        # Using simple method for now, can be async'd if we want.
-        tags = await self._classify_text_async(text)
-        tags_str = ", ".join(tags)
-        
-        query_text = text
-        if tags:
-            logger.info(f"🏷️ Tags: {tags_str}")
-            query_text = f"Tags: {tags_str}. Content: {text}"
-
-        # 1. Retrieve
-        try:
-            nodes = await self.retriever.aretrieve(query_text)
-        except Exception as e:
-            logger.error(f"Retrieval failed: {e}")
-            return []
-
-        # 2. Rerank (LLM)
-        if self.config.use_llm_rerank and self.llm_reranker and nodes:
-             try:
-                 query_bundle = QueryBundle(query_str=text) 
-                 # LLMRerank in older versions might not have `apostprocess_nodes`.
-                 # Check if it does, else run sync in executor.
-                 if hasattr(self.llm_reranker, "apostprocess_nodes"):
-                    nodes = await self.llm_reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
-                 else:
-                    # Sync fallback
-                    nodes = self.llm_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
-             except Exception as e:
-                 logger.warning(f"LLM Rerank failed: {e}")
-
-        # 3. Rerank (Vertex)
-        if self.vertex_reranker and nodes and not self.config.use_llm_rerank:
-            try:
-                # VertexAIRerank custom class likely sync? 
-                # If we wrote it, we should check. Assuming sync for now.
-                query_bundle = QueryBundle(query_str=text)
-                nodes = self.vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
-            except Exception as e:
-                 logger.warning(f"Vertex Rerank failed: {e}")
 
         return self._nodes_to_dicts(nodes, source_type="advanced_retrieval")
 
@@ -400,7 +377,7 @@ class StyleAuditor:
         except Exception:
             return []
 
-    async def _collect_additional_contexts(self, queries: List[str]) -> List[Dict]:
+    async def _collect_additional_contexts(self, queries: List[str], config: AuditorConfig) -> List[Dict]:
         """Retrieve additional contexts for specific queries."""
         results = []
         # Simple parallel execution
@@ -410,8 +387,8 @@ class StyleAuditor:
         for nodes in node_lists:
             if isinstance(nodes, list):
                 # We can filter/rerank here strictly if needed
-                # For speed, just take top K
-                top_nodes = nodes[:self.config.final_top_k]
+                # For speed, just take top K from the config
+                top_nodes = nodes[:config.final_top_k]
                 results.extend(self._nodes_to_dicts(top_nodes, source_type="additional"))
         
         return results

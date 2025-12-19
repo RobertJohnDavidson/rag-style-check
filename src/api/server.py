@@ -33,12 +33,13 @@ from src.core.models.log import AuditLog
 from src.core.auditor import StyleAuditor
 from src.core.test_manager import TestManager
 from src.core import test_generator
+from src.core.prompts import PROMPT_GENERATE_NEWS_TEXT
 from src.api.schemas import (
     AuditRequest,
     AuditResponse,
     Violation,
-
-    ModelInfo
+    ModelInfo,
+    GenerateTextResponse
 )
 from src.api.test_schemas import (
     TestInput,
@@ -206,8 +207,11 @@ async def audit_text(
         start_time = datetime.now()
         
         # Run the auditor (Async call)
-        # Note: request.text might be empty
-        violations_dicts, log_data = await auditor_svc.check_text(request.text)
+        # Pass tuning parameters if provided
+        violations_dicts, log_data = await auditor_svc.check_text(
+            request.text, 
+            tuning_params=request.tuning_parameters
+        )
         
         # Save Log to DB
         if log_data:
@@ -252,21 +256,21 @@ async def audit_text(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Audit failed: {str(e)}")
 
-@app.get("/models", response_model=List[ModelInfo])
-async def list_models():
-    models = [
-        ModelInfo(
-            name="gemini-2.0-flash-exp",
-            description="Fastest model",
-            available=True
-        ),
-        ModelInfo(
-            name="gemini-1.5-pro",
-            description="More capable model",
-            available=True
-        )
-    ]
-    return models
+@app.get("/api/generate-text", response_model=GenerateTextResponse)
+async def generate_text_api():
+    """
+    Generate a high-quality news paragraph using Vertex AI.
+    """
+    try:
+        # LlamaSettings.llm is initialized in lifespan
+        if not LlamaSettings.llm:
+            raise HTTPException(status_code=503, detail="LLM not initialized")
+            
+        response = await LlamaSettings.llm.acomplete(PROMPT_GENERATE_NEWS_TEXT)
+        return GenerateTextResponse(text=response.text.strip())
+    except Exception as e:
+        logger.error(f"Text generation failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Text generation failed: {str(e)}")
 
 # --- TEST MANAGEMENT ENDPOINTS ---
 # NOTE: TestManager logic might need refactor to share the same DB engine/Auditor
@@ -459,10 +463,12 @@ async def run_test(
         
         test_record = TestRecord(**test_dict)
         
-        # Run audit
+        # Run audit with provided tuning parameters
         start_time = datetime.now()
-        # Use main auditor
-        detected, log_data = await auditor_svc.check_text(test_record.text)
+        detected, log_data = await auditor_svc.check_text(
+            test_record.text, 
+            tuning_params=tuning_params
+        )
         
         # Save Log to DB
         if log_data:
@@ -553,14 +559,6 @@ async def get_test_results(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get results: {str(e)}")
-
-@app.get("/api/models", response_model=ModelListResponse)
-async def list_available_models_api():
-    models = [
-        TestModelInfo(name="models/gemini-1.5-flash", display_name="Gemini 1.5 Flash", description="Fast", supports_thinking=False),
-        TestModelInfo(name="models/gemini-1.5-pro", display_name="Gemini 1.5 Pro", description="Capable", supports_thinking=False)
-    ]
-    return ModelListResponse(models=models)
 
 @app.get("/api/tuning-defaults", response_model=TuningParameters)
 async def get_tuning_defaults():

@@ -52,12 +52,20 @@ export async function createTest(input: {
 }
 
 // Perform a standard audit
-export async function auditText(text: string, testId?: string): Promise<ApiResponse<{ violations: Violation[], metadata: any }>> {
+export async function auditText(
+	text: string,
+	testId?: string,
+	tuningParameters?: TuningParameters
+): Promise<ApiResponse<{ violations: Violation[], metadata: any }>> {
 	try {
 		const response = await fetch(`${getApiBase()}/audit`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ text, test_id: testId })
+			body: JSON.stringify({
+				text,
+				test_id: testId,
+				tuning_parameters: tuningParameters
+			})
 		});
 
 		if (!response.ok) {
@@ -135,15 +143,15 @@ export async function deleteTest(id: string): Promise<ApiResponse<void>> {
 }
 
 // Run a test with tuning parameters
-export async function runTest(testId: string, tuning: TuningParameters): Promise<ApiResponse<TestResult>> {
+export async function runTest(testId: string, tuningParameters?: TuningParameters): Promise<ApiResponse<TestResult>> {
 	try {
 		// Validate tuning parameters
-		const validated = TuningParametersSchema.parse(tuning);
+		const validated = tuningParameters ? TuningParametersSchema.parse(tuningParameters) : undefined;
 
 		const response = await fetch(`${getApiBase()}/api/tests/${testId}/run`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(validated)
+			body: JSON.stringify(validated || {})
 		});
 
 		if (!response.ok) {
@@ -179,22 +187,6 @@ export async function generateTests(request: GenerateTestsRequest): Promise<ApiR
 	}
 }
 
-// Get available models
-export async function getModels(): Promise<ApiResponse<string[]>> {
-	try {
-		const response = await fetch(`${getApiBase()}/api/models`);
-
-		if (!response.ok) {
-			throw new Error('Failed to load models');
-		}
-
-		const data = await response.json();
-		return { data };
-	} catch (err) {
-		return { error: err instanceof Error ? err.message : 'Failed to load models' };
-	}
-}
-
 // Get default tuning parameters
 export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>> {
 	try {
@@ -208,5 +200,22 @@ export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>
 		return { data };
 	} catch (err) {
 		return { error: err instanceof Error ? err.message : 'Failed to load tuning defaults' };
+	}
+}
+
+// Generate high-quality news text
+export async function generateText(): Promise<ApiResponse<{ text: string }>> {
+	try {
+		const response = await fetch(`${getApiBase()}/api/generate-text`);
+
+		if (!response.ok) {
+			const error = await response.json().catch(() => ({ detail: 'Failed to generate text' }));
+			throw new Error(error.detail || 'Failed to generate text');
+		}
+
+		const data = await response.json();
+		return { data };
+	} catch (err) {
+		return { error: err instanceof Error ? err.message : 'Failed to generate text' };
 	}
 }

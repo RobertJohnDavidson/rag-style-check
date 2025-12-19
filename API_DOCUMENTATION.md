@@ -177,16 +177,6 @@ GET /models
     "description": "Fast, cost-effective model for production use",
     "available": true
   },
-  {
-    "name": "gemini-1.5-pro",
-    "description": "More capable model for complex cases",
-    "available": true
-  },
-  {
-    "name": "gemini-1.5-flash",
-    "description": "Previous generation fast model",
-    "available": true
-  }
 ]
 ```
 
