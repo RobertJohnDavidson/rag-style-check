@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from uuid import UUID
+from src.config import settings
 
 
 # --- Input Schemas (Request Bodies) ---
@@ -37,7 +38,7 @@ class TestInput(BaseModel):
 class TuningParameters(BaseModel):
     """Configurable parameters for running tests"""
     model_name: str = Field(
-        default="gemini-2.5-flash",
+        default=settings.DEFAULT_MODEL,
         description="LLM model to use for auditing"
     )
     temperature: float = Field(
@@ -47,43 +48,37 @@ class TuningParameters(BaseModel):
         description="LLM temperature (0.0-2.0)"
     )
     initial_retrieval_count: int = Field(
-        default=75,
+        default=settings.DEFAULT_INITIAL_RETRIEVAL_COUNT,
         ge=10,
         le=200,
         description="Number of rules to retrieve initially"
     )
     final_top_k: int = Field(
-        default=25,
+        default=settings.DEFAULT_FINAL_TOP_K,
         ge=5,
         le=100,
         description="Number of top rules after reranking"
     )
     rerank_score_threshold: float = Field(
-        default=0.10,
+        default=settings.DEFAULT_RERANK_SCORE_THRESHOLD,
         ge=0.0,
         le=1.0,
         description="Minimum rerank score to include a rule"
     )
     aggregated_rule_limit: int = Field(
-        default=40,
+        default=settings.DEFAULT_AGGREGATED_RULE_LIMIT,
         ge=10,
         le=100,
         description="Maximum number of unique rules to use"
     )
-    min_sentence_length: int = Field(
-        default=5,
-        ge=1,
-        le=50,
-        description="Minimum sentence length in words"
-    )
     max_agent_iterations: int = Field(
-        default=3,
+        default=settings.DEFAULT_MAX_AGENT_ITERATIONS,
         ge=1,
         le=10,
         description="Maximum agent thinking cycles"
     )
     confidence_threshold: float = Field(
-        default=10.0,
+        default=settings.DEFAULT_CONFIDENCE_THRESHOLD,
         ge=0.0,
         le=100.0,
         description="Minimum confidence score for violations"
@@ -197,7 +192,6 @@ class ModelInfo(BaseModel):
     """Information about available LLM models"""
     name: str
     display_name: str
-    description: str
     supports_thinking: bool = False
 
 

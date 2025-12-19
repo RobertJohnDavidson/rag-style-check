@@ -42,18 +42,7 @@
 	// Tuning State
 	let showTuning = $state(false);
 	let models = $state<ModelInfo[]>([]);
-	let tuningParams = $state<TuningParameters>({
-		model_name: 'gemini-2.5-flash',
-		temperature: 0.1,
-		initial_retrieval_count: 75,
-		final_top_k: 25,
-		rerank_score_threshold: 0.1,
-		aggregated_rule_limit: 40,
-		min_sentence_length: 5,
-		max_agent_iterations: 3,
-		confidence_threshold: 10.0,
-		include_thinking: false
-	});
+	let tuningParams = $state<TuningParameters>({});
 
 	async function handleAudit() {
 		if (!text.trim()) {

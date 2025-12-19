@@ -94,7 +94,7 @@
 					value={[parameters.max_agent_iterations]}
 					onValueChange={(v: number[]) => handleSliderChange('max_agent_iterations', v)}
 					min={1}
-					max={10}
+					max={3}
 					step={1}
 					{disabled}
 				/>
@@ -213,24 +213,6 @@
 				/>
 			</div>
 
-			<!-- Min Sentence Length -->
-			<div class="space-y-3">
-				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium">Min Sentence Length</span>
-					<span class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded"
-						>{parameters.min_sentence_length}</span
-					>
-				</div>
-				<Slider.Root
-					type="multiple"
-					value={[parameters.min_sentence_length]}
-					onValueChange={(v: number[]) => handleSliderChange('min_sentence_length', v)}
-					min={1}
-					max={50}
-					step={1}
-					{disabled}
-				/>
-			</div>
 		</div>
 	</div>
 </div>

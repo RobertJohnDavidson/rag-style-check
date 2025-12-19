@@ -60,7 +60,6 @@ class AuditorConfig(BaseModel):
     final_top_k: int = settings.DEFAULT_FINAL_TOP_K
     rerank_score_threshold: float = settings.DEFAULT_RERANK_SCORE_THRESHOLD
     aggregated_rule_limit: int = settings.DEFAULT_AGGREGATED_RULE_LIMIT
-    min_sentence_length: int = settings.DEFAULT_MIN_SENTENCE_LENGTH
     max_agent_iterations: int = settings.DEFAULT_MAX_AGENT_ITERATIONS
     confidence_threshold: float = settings.DEFAULT_CONFIDENCE_THRESHOLD
     use_query_fusion: bool = True
@@ -108,7 +107,7 @@ class StyleAuditor:
     def _get_llm_for_run(self, config: AuditorConfig) -> GoogleGenAI:
         """Get LLM instance configured for the run."""
         # Only create new one if config differs significantly from base
-        if config.model_name == self.base_llm.model and abs(config.temperature - self.base_llm.temperature) < 0.01:
+        if config.model_name == self.base_llm.model:
             return self.base_llm
             
         return GoogleGenAI(
@@ -116,7 +115,7 @@ class StyleAuditor:
             temperature=config.temperature,
             vertexai_config={
                 "project": settings.PROJECT_ID,
-                "location": settings.LLM_REGION
+                "location": settings.LLM_REGION,
             }
         )
 
@@ -234,7 +233,6 @@ class StyleAuditor:
             "aggregated_rule_limit": run_config.aggregated_rule_limit,
             "use_query_fusion": run_config.use_query_fusion,
             "use_llm_rerank": run_config.use_llm_rerank,
-            "min_sentence_length": run_config.min_sentence_length
         }
 
         log_data = {
@@ -267,9 +265,6 @@ class StyleAuditor:
         Returns (violations, steps).
         """
         steps = []
-        # SKIP very short paragraphs
-        if len(paragraph.split()) < config.min_sentence_length:
-            return [], steps
 
         # 1. Advanced Retrieval
         logger.info("🔍 Retrieving rules...")

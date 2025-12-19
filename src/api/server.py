@@ -568,19 +568,19 @@ async def get_tuning_defaults():
 @app.get("/api/models", response_model=ModelListResponse)
 async def list_available_models_api():
     models = [
-        ModelInfo(
+        TestModelInfo(
             name="gemini-2.5-flash", 
-            display_name="Gemini 2.5 Flash", 
+            display_name="Gemini 2.5 Flash",
             supports_thinking=False
         ),
-        ModelInfo(
+        TestModelInfo(
             name="gemini-2.5-flash-lite", 
-            display_name="Gemini 2.5 Flash Lite", 
+            display_name="Gemini 2.5 Flash Lite",
             supports_thinking=True
         ),
-        ModelInfo(
+        TestModelInfo(
             name="gemini-3-flash-preview", 
-            display_name="Gemini 3.0 Flash Preview", 
+            display_name="Gemini 3.0 Flash Preview",
             supports_thinking=True
         ),
     ]

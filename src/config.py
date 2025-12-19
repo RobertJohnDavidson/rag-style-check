@@ -49,8 +49,7 @@ class AppSettings(BaseModel):
     DEFAULT_FINAL_TOP_K: int = 15
     DEFAULT_RERANK_SCORE_THRESHOLD: float = 0.10
     DEFAULT_AGGREGATED_RULE_LIMIT: int = 40
-    DEFAULT_MIN_SENTENCE_LENGTH: int = 5
-    DEFAULT_MAX_AGENT_ITERATIONS: int = 3
+    DEFAULT_MAX_AGENT_ITERATIONS: int = 1
     DEFAULT_CONFIDENCE_THRESHOLD: float = 10.0
 
     def validate_env(self):

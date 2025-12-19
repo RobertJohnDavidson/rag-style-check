@@ -27,7 +27,6 @@ export interface TuningParameters {
 	final_top_k: number;
 	rerank_score_threshold: number;
 	aggregated_rule_limit: number;
-	min_sentence_length: number;
 	max_agent_iterations: number;
 	confidence_threshold: number;
 	include_thinking: boolean;
