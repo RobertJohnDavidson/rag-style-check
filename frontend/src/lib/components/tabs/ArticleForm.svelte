@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { ExpectedViolation, Test } from '$lib/types';
-	import { Input, Button, Alert } from '$lib/components/ui';
+	import { Input, Button, Alert, Label } from '$lib/components/ui';
 	import { TestPreview } from '$lib/components/tests';
 	import { CBCArticleUrlSchema } from '$lib/schemas';
 	import { generateTests as apiGenerateTests, createTest as apiCreateTest } from '$lib/api';
+	import { LoaderCircle, Info } from '@lucide/svelte';
 
 	interface Props {
 		onUnsavedChanges?: (hasChanges: boolean) => void;
@@ -129,47 +130,47 @@
 
 <div class="space-y-4">
 	{#if !showPreview}
-		<Input
-			label="CBC Article URL"
-			type="url"
-			bind:value={articleUrl}
-			placeholder="https://www.cbc.ca/news/..."
-			error={urlError}
-			disabled={loading}
-			required
-			autofocus
-		/>
-		
-		<p class="text-xs text-gray-500">Enter a valid CBC article URL to generate a test</p>
+		<div class="space-y-2">
+			<Label.Root>CBC Article URL</Label.Root>
+			<Input.Root
+				type="url"
+				bind:value={articleUrl}
+				placeholder="https://www.cbc.ca/news/..."
+				disabled={loading}
+				required
+			/>
+			{#if urlError}
+				<p class="text-xs text-destructive">{urlError}</p>
+			{:else}
+				<p class="text-xs text-gray-500">Enter a valid CBC article URL to generate a test</p>
+			{/if}
+		</div>
 
-		<Button
-			variant="primary"
-			onclick={handleGenerate}
-			loading={loading}
-			disabled={!articleUrl}
-			class="w-full"
-		>
+		<Button.Root onclick={handleGenerate} disabled={loading || !articleUrl} class="w-full">
+			{#if loading}
+				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+			{/if}
 			Generate Test from Article
-		</Button>
+		</Button.Root>
 	{:else}
-		<Alert variant="info">
-			<strong>Generated Test - Review and Edit</strong><br />
-			Review and modify the generated test before saving
-		</Alert>
+		<Alert.Root>
+			<Info class="h-4 w-4" />
+			<Alert.Title>Generated Test - Review and Edit</Alert.Title>
+			<Alert.Description>Review and modify the generated test before saving</Alert.Description>
+		</Alert.Root>
 
-		<TestPreview
-			test={previewTest}
-			onSave={handleSave}
-			onCancel={handleCancel}
-			loading={loading}
-		/>
+		<TestPreview test={previewTest} onSave={handleSave} onCancel={handleCancel} {loading} />
 	{/if}
 
 	{#if error}
-		<Alert variant="error">{error}</Alert>
+		<Alert.Root variant="destructive">
+			<Alert.Description>{error}</Alert.Description>
+		</Alert.Root>
 	{/if}
 
 	{#if success}
-		<Alert variant="success">{success}</Alert>
+		<Alert.Root class="bg-green-50 text-green-700 border-green-200">
+			<Alert.Description>{success}</Alert.Description>
+		</Alert.Root>
 	{/if}
 </div>

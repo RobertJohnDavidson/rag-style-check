@@ -1,9 +1,10 @@
 <script lang="ts">
 	import type { ExpectedViolation, Test } from '$lib/types';
-	import { Input, Button, Alert } from '$lib/components/ui';
+	import { Input, Button, Alert, Label } from '$lib/components/ui';
 	import { TestPreview } from '$lib/components/tests';
 	import { SyntheticCountSchema } from '$lib/schemas';
 	import { generateTests as apiGenerateTests, createTest as apiCreateTest } from '$lib/api';
+	import { LoaderCircle, Info } from '@lucide/svelte';
 
 	interface Props {
 		onUnsavedChanges?: (hasChanges: boolean) => void;
@@ -122,34 +123,37 @@
 
 <div class="space-y-4">
 	{#if !showPreview}
-		<Input
-			label="Number of Tests to Generate"
-			type="number"
-			bind:value={syntheticCount}
-			min={1}
-			max={20}
-			error={countError}
-			disabled={loading}
-			required
-			autofocus
-		/>
+		<div class="space-y-2">
+			<Label.Root>Number of Tests to Generate</Label.Root>
+			<Input.Root
+				type="number"
+				bind:value={syntheticCount}
+				min={1}
+				max={20}
+				disabled={loading}
+				required
+			/>
+			{#if countError}
+				<p class="text-xs text-destructive">{countError}</p>
+			{:else}
+				<p class="text-xs text-gray-500">Generate between 1 and 20 synthetic tests</p>
+			{/if}
+		</div>
 
-		<p class="text-xs text-gray-500">Generate between 1 and 20 synthetic tests</p>
-
-		<Button
-			variant="primary"
-			onclick={handleGenerate}
-			{loading}
-			disabled={!syntheticCount}
-			class="w-full"
-		>
+		<Button.Root onclick={handleGenerate} disabled={loading || !syntheticCount} class="w-full">
+			{#if loading}
+				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+			{/if}
 			Generate {syntheticCount} Synthetic Test{syntheticCount > 1 ? 's' : ''}
-		</Button>
+		</Button.Root>
 	{:else}
-		<Alert variant="info">
-			<strong>Generated Tests - Review and Save</strong><br />
-			{generatedTests.length} test(s) generated. Review and save individually.
-		</Alert>
+		<Alert.Root>
+			<Info class="h-4 w-4" />
+			<Alert.Title>Generated Tests - Review and Save</Alert.Title>
+			<Alert.Description>
+				{generatedTests.length} test(s) generated. Review and save individually.
+			</Alert.Description>
+		</Alert.Root>
 
 		<div class="space-y-4">
 			{#each generatedTests as test, idx (idx)}
@@ -159,17 +163,21 @@
 				</div>
 			{/each}
 
-			<Button variant="secondary" onclick={handleCancelAll} disabled={loading} class="w-full">
+			<Button.Root variant="secondary" onclick={handleCancelAll} disabled={loading} class="w-full">
 				Cancel All
-			</Button>
+			</Button.Root>
 		</div>
 	{/if}
 
 	{#if error}
-		<Alert variant="error">{error}</Alert>
+		<Alert.Root variant="destructive">
+			<Alert.Description>{error}</Alert.Description>
+		</Alert.Root>
 	{/if}
 
 	{#if success}
-		<Alert variant="success">{success}</Alert>
+		<Alert.Root class="bg-green-50 text-green-700 border-green-200">
+			<Alert.Description>{success}</Alert.Description>
+		</Alert.Root>
 	{/if}
 </div>

@@ -1,5 +1,5 @@
 // API client with fetch wrappers for all endpoints
-import type { Test, TestResult, TuningParameters, PaginatedResponse, GenerateTestsRequest, GenerateTestsResponse } from './types';
+import type { Test, TestResult, TuningParameters, PaginatedResponse, GenerateTestsRequest, GenerateTestsResponse, Violation } from './types';
 import { TestInputSchema, TuningParametersSchema } from './schemas';
 
 // Generic API response wrapper
@@ -48,6 +48,27 @@ export async function createTest(input: {
 		return { data };
 	} catch (err) {
 		return { error: err instanceof Error ? err.message : 'Unknown error occurred' };
+	}
+}
+
+// Perform a standard audit
+export async function auditText(text: string, testId?: string): Promise<ApiResponse<{ violations: Violation[], metadata: any }>> {
+	try {
+		const response = await fetch(`${getApiBase()}/audit`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ text, test_id: testId })
+		});
+
+		if (!response.ok) {
+			const error = await response.json().catch(() => ({ detail: 'Audit failed' }));
+			throw new Error(error.detail || 'Audit failed');
+		}
+
+		const data = await response.json();
+		return { data };
+	} catch (err) {
+		return { error: err instanceof Error ? err.message : 'Failed to connect to API' };
 	}
 }
 

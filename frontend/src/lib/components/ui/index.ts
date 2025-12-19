@@ -1,12 +1,40 @@
-// Barrel export for UI components
-export { default as LoadingSpinner } from './LoadingSpinner.svelte';
-export { default as Modal } from './Modal.svelte';
-export { default as Button } from './Button.svelte';
-export { default as Input } from './Input.svelte';
-export { default as Textarea } from './Textarea.svelte';
-export { default as Select } from './Select.svelte';
-export { default as Alert } from './Alert.svelte';
-export { default as Card } from './Card.svelte';
-export { default as Badge } from './Badge.svelte';
-export { default as Slider } from './Slider.svelte';
-export { default as ErrorBoundary } from './ErrorBoundary.svelte';
+import * as Alert from "./alert";
+import * as Badge from "./badge";
+import * as Button from "./button";
+import * as Card from "./card";
+import * as Input from "./input";
+import * as Label from "./label";
+import * as Select from "./select";
+import * as Separator from "./separator";
+import * as Slider from "./slider";
+import * as Switch from "./switch";
+import * as Tabs from "./tabs";
+import * as Textarea from "./textarea";
+
+// Re-export as namespaces for bulk imports like import { Button, Input } from '$lib/components/ui'
+export {
+    Alert,
+    Badge,
+    Button,
+    Card,
+    Input,
+    Label,
+    Select,
+    Separator,
+    Slider,
+    Switch,
+    Tabs,
+    Textarea,
+};
+
+// Also export individual components for convenience if needed, 
+// though shadcn-svelte traditionally uses the namespaced version.
+export { Root as BadgeComponent } from "./badge";
+export { Root as ButtonComponent, buttonVariants } from "./button";
+export { Root as InputComponent } from "./input";
+export { Root as LabelComponent } from "./label";
+export { Root as TextareaComponent } from "./textarea";
+export { Root as SwitchComponent } from "./switch";
+
+// Custom components
+export { default as LoadingSpinner } from "./LoadingSpinner.svelte";

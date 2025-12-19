@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ExpectedViolation } from '$lib/types';
-	import { cardClasses } from '$lib/theme';
+	import { Card, Button } from '$lib/components/ui';
 
 	interface Props {
 		violation: ExpectedViolation;
@@ -12,7 +12,7 @@
 	let { violation, showRemove = false, onRemove, class: className = '' }: Props = $props();
 </script>
 
-<div class="{cardClasses(false)} !p-3 bg-gray-50 flex items-start justify-between {className}">
+<Card.Root class="!p-3 bg-accent/20 flex items-start justify-between {className}">
 	<div class="flex-1">
 		<div class="font-semibold text-sm text-gray-900">{violation.rule}</div>
 		<div class="text-sm text-gray-600 mt-1">"{violation.text}"</div>
@@ -20,23 +20,24 @@
 			<div class="text-xs text-gray-500 mt-1">{violation.reason}</div>
 		{/if}
 		{#if violation.link}
-			<a 
-				href={violation.link} 
-				target="_blank" 
-				rel="noopener noreferrer" 
-				class="text-xs text-indigo-600 hover:text-indigo-800 mt-1 inline-block"
+			<a
+				href={violation.link}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="text-xs text-primary hover:underline mt-1 inline-block"
 			>
 				View Rule →
 			</a>
 		{/if}
 	</div>
 	{#if showRemove && onRemove}
-		<button
+		<Button.Root
+			variant="ghost"
+			size="sm"
 			onclick={onRemove}
-			class="ml-2 text-red-600 hover:text-red-800 text-sm font-medium"
-			type="button"
+			class="h-auto p-0 px-2 text-destructive hover:text-destructive/80 hover:bg-transparent"
 		>
 			Remove
-		</button>
+		</Button.Root>
 	{/if}
-</div>
+</Card.Root>

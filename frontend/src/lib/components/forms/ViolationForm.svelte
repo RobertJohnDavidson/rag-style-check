@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Input, Button } from '$lib/components/ui';
+	import { Input, Button, Label } from '$lib/components/ui';
 	import { ExpectedViolationSchema } from '$lib/schemas';
 	import type { ExpectedViolationInput } from '$lib/schemas';
 
@@ -19,16 +19,12 @@
 	// Error state
 	let errors = $state<Record<string, string>>({});
 
-	// Auto-focus element
-	let ruleInput: HTMLInputElement | undefined = $state();
-
 	function resetForm() {
 		rule = '';
 		text = '';
 		reason = '';
 		link = '';
 		errors = {};
-		ruleInput?.focus();
 	}
 
 	function handleAdd() {
@@ -60,60 +56,54 @@
 		// Reset form
 		resetForm();
 	}
-
-	function clearError(field: string) {
-		const { [field]: _, ...rest } = errors;
-		errors = rest;
-	}
 </script>
 
 <div class="border border-gray-200 rounded-lg p-4 space-y-3">
-	<Input
-		label="Rule name"
-		type="text"
-		bind:value={rule}
-		placeholder="e.g., cabinet_capitalization"
-		error={errors.rule}
-		{disabled}
-		required
-		autofocus
-	/>
-	
-	<Input
-		label="Violating text snippet"
-		type="text"
-		bind:value={text}
-		placeholder="The exact text that violates the rule"
-		error={errors.text}
-		{disabled}
-		required
-	/>
-	
-	<Input
-		label="Reason (optional)"
-		type="text"
-		bind:value={reason}
-		placeholder="Why this is a violation"
-		error={errors.reason}
-		{disabled}
-	/>
-	
-	<Input
-		label="Link to rule"
-		type="url"
-		bind:value={link}
-		placeholder="https://..."
-		error={errors.link}
-		{disabled}
-		required
-	/>
-	
-	<Button
-		variant="secondary"
-		onclick={handleAdd}
-		{disabled}
-		class="w-full"
-	>
+	<div class="space-y-1">
+		<Label.Root>Rule name</Label.Root>
+		<Input.Root
+			type="text"
+			bind:value={rule}
+			placeholder="e.g., cabinet_capitalization"
+			{disabled}
+			required
+		/>
+		{#if errors.rule}
+			<p class="text-xs text-destructive">{errors.rule}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Violating text snippet</Label.Root>
+		<Input.Root
+			type="text"
+			bind:value={text}
+			placeholder="The exact text that violates the rule"
+			{disabled}
+			required
+		/>
+		{#if errors.text}
+			<p class="text-xs text-destructive">{errors.text}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Reason (optional)</Label.Root>
+		<Input.Root type="text" bind:value={reason} placeholder="Why this is a violation" {disabled} />
+		{#if errors.reason}
+			<p class="text-xs text-destructive">{errors.reason}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Link to rule</Label.Root>
+		<Input.Root type="url" bind:value={link} placeholder="https://..." {disabled} required />
+		{#if errors.link}
+			<p class="text-xs text-destructive">{errors.link}</p>
+		{/if}
+	</div>
+
+	<Button.Root variant="secondary" onclick={handleAdd} {disabled} class="w-full">
 		Add Violation
-	</Button>
+	</Button.Root>
 </div>

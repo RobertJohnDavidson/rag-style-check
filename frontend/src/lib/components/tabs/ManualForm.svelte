@@ -1,10 +1,11 @@
 <script lang="ts">
 	import type { ExpectedViolation } from '$lib/types';
-	import { Input, Textarea, Button, Alert } from '$lib/components/ui';
+	import { Input, Textarea, Button, Alert, Label } from '$lib/components/ui';
 	import { ViolationForm, ViolationList } from '$lib/components/forms';
 	import { TestInputSchema } from '$lib/schemas';
 	import { createTest as apiCreateTest } from '$lib/api';
 	import type { ExpectedViolationInput } from '$lib/schemas';
+	import { LoaderCircle, Info } from '@lucide/svelte';
 
 	interface Props {
 		onUnsavedChanges?: (hasChanges: boolean) => void;
@@ -110,72 +111,85 @@
 </script>
 
 <div class="space-y-4">
-	<Input
-		label="Test Label"
-		type="text"
-		bind:value={label}
-		placeholder="e.g., Cabinet capitalization test"
-		error={validationErrors.label}
-		disabled={loading}
-		required
-		autofocus
-	/>
+	<div class="space-y-2">
+		<Label.Root>Test Label</Label.Root>
+		<Input.Root
+			type="text"
+			bind:value={label}
+			placeholder="e.g., Cabinet capitalization test"
+			disabled={loading}
+			required
+		/>
+		{#if validationErrors.label}
+			<p class="text-xs text-destructive">{validationErrors.label}</p>
+		{/if}
+	</div>
 
-	<Textarea
-		label="Test Text"
-		bind:value={text}
-		placeholder="Enter the text to test..."
-		rows={6}
-		error={validationErrors.text}
-		disabled={loading}
-		required
-	/>
+	<div class="space-y-2">
+		<Label.Root>Test Text</Label.Root>
+		<Textarea.Root
+			bind:value={text}
+			placeholder="Enter the text to test..."
+			rows={6}
+			disabled={loading}
+			required
+		/>
+		{#if validationErrors.text}
+			<p class="text-xs text-destructive">{validationErrors.text}</p>
+		{/if}
+	</div>
 
-	<div>
-		<label class="block text-sm font-semibold text-gray-700 mb-2">Expected Violations</label>
-		
+	<div class="space-y-2">
+		<Label.Root class="text-base">Expected Violations</Label.Root>
+
 		<ViolationList
-			violations={violations}
+			{violations}
 			onRemove={removeViolation}
 			showRemove={true}
 			emptyMessage="No violations added yet. Add at least one violation below."
 			class="mb-3"
 		/>
 
-		<ViolationForm
-			onAdd={addViolation}
-			disabled={loading}
-		/>
-		
+		<ViolationForm onAdd={addViolation} disabled={loading} />
+
 		{#if validationErrors.expected_violations}
-			<p class="text-sm text-red-600 mt-2">{validationErrors.expected_violations}</p>
+			<p class="text-xs text-destructive mt-2">{validationErrors.expected_violations}</p>
 		{/if}
 	</div>
 
-	<Textarea
-		label="Notes (Optional)"
-		bind:value={notes}
-		placeholder="Additional notes..."
-		rows={3}
-		error={validationErrors.notes}
-		disabled={loading}
-	/>
+	<div class="space-y-2">
+		<Label.Root>Notes (Optional)</Label.Root>
+		<Textarea.Root
+			bind:value={notes}
+			placeholder="Additional notes..."
+			rows={3}
+			disabled={loading}
+		/>
+		{#if validationErrors.notes}
+			<p class="text-xs text-destructive">{validationErrors.notes}</p>
+		{/if}
+	</div>
 
-	<Button
-		variant="primary"
+	<Button.Root
 		onclick={handleCreateTest}
-		loading={loading}
-		disabled={!label || !text || violations.length === 0}
+		disabled={loading || !label || !text || violations.length === 0}
 		class="w-full"
 	>
+		{#if loading}
+			<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+		{/if}
 		Create Test
-	</Button>
+	</Button.Root>
 
 	{#if error}
-		<Alert variant="error">{error}</Alert>
+		<Alert.Root variant="destructive">
+			<Alert.Description>{error}</Alert.Description>
+		</Alert.Root>
 	{/if}
 
 	{#if success}
-		<Alert variant="success">{success}</Alert>
+		<Alert.Root class="bg-green-50 text-green-700 border-green-200">
+			<Alert.Description>{success}</Alert.Description>
+		</Alert.Root>
 	{/if}
 </div>

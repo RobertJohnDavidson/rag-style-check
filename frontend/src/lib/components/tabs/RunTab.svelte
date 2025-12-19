@@ -3,6 +3,7 @@
 	import { Card, Button, Alert } from '$lib/components/ui';
 	import { TuningParameters, MetricsDisplay } from '$lib/components/tests';
 	import { getTest as apiGetTest, runTest as apiRunTest } from '$lib/api';
+	import { LoaderCircle, Play } from '@lucide/svelte';
 
 	interface Props {
 		testId?: string;
@@ -75,67 +76,69 @@
 
 <div class="space-y-6">
 	{#if !selectedTest}
-		<div class="text-center py-8 text-gray-500">
-			Select a test from the Browse tab to run it
-		</div>
+		<div class="text-center py-8 text-gray-500">Select a test from the Browse tab to run it</div>
 	{:else}
 		<!-- Test Info -->
-		<Card>
-			<h3 class="font-bold text-gray-900 mb-2">{selectedTest.label}</h3>
-			<p class="text-sm text-gray-700 mb-2">{selectedTest.text}</p>
-			<div class="text-xs text-gray-500">
-				Expected violations: {selectedTest.expected_violations.length}
-			</div>
-		</Card>
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{selectedTest.label}</Card.Title>
+			</Card.Header>
+			<Card.Content>
+				<p class="text-sm text-gray-700 mb-2">{selectedTest.text}</p>
+				<div class="text-xs text-muted-foreground">
+					Expected violations: {selectedTest.expected_violations.length}
+				</div>
+			</Card.Content>
+		</Card.Root>
 
 		<!-- Tuning Parameters -->
 		<div class="border-t border-gray-200 pt-6">
-			<TuningParameters
-				bind:parameters={tuningParams}
-				disabled={loading}
-			/>
+			<TuningParameters bind:parameters={tuningParams} disabled={loading} />
 		</div>
 
 		<!-- Run Button -->
-		<Button
-			variant="primary"
-			onclick={handleRunTest}
-			loading={loading}
-			class="w-full"
-		>
+		<Button.Root onclick={handleRunTest} disabled={loading} class="w-full">
+			{#if loading}
+				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+			{:else}
+				<Play class="mr-2 h-4 w-4" />
+			{/if}
 			Run Test
-		</Button>
+		</Button.Root>
 
 		<!-- Error Display -->
 		{#if error}
-			<Alert variant="error">{error}</Alert>
+			<Alert.Root variant="destructive">
+				<Alert.Description>{error}</Alert.Description>
+			</Alert.Root>
 		{/if}
 
 		<!-- Results Display -->
 		{#if result}
 			<div class="space-y-4">
-				<MetricsDisplay
-					metrics={result.metrics}
-					executionTime={result.execution_time_seconds}
-				/>
+				<MetricsDisplay metrics={result.metrics} executionTime={result.execution_time_seconds} />
 
 				{#if result.detected_violations.length > 0}
-					<Card>
-						<h3 class="font-bold text-gray-900 mb-4">
-							Detected Violations ({result.detected_violations.length})
-						</h3>
-						<div class="space-y-3">
-							{#each result.detected_violations as violation (violation)}
-								<div class="border-l-4 border-red-500 pl-4">
-									<div class="font-semibold text-sm">{violation.rule}</div>
-									<div class="text-sm text-gray-600 mt-1">"{violation.text}"</div>
-									{#if violation.reason}
-										<div class="text-xs text-gray-500 mt-1">{violation.reason}</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</Card>
+					<Card.Root>
+						<Card.Header>
+							<Card.Title class="text-lg">
+								Detected Violations ({result.detected_violations.length})
+							</Card.Title>
+						</Card.Header>
+						<Card.Content>
+							<div class="space-y-3">
+								{#each result.detected_violations as violation (violation)}
+									<div class="border-l-4 border-destructive pl-4 py-1">
+										<div class="font-semibold text-sm">{violation.rule}</div>
+										<div class="text-sm text-gray-600 mt-1">"{violation.text}"</div>
+										{#if violation.reason}
+											<div class="text-xs text-gray-500 mt-1">{violation.reason}</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</Card.Content>
+					</Card.Root>
 				{/if}
 			</div>
 		{/if}

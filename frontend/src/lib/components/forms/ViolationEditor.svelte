@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Input, Button } from '$lib/components/ui';
+	import { Input, Button, Label } from '$lib/components/ui';
 	import { ExpectedViolationSchema } from '$lib/schemas';
 	import type { ExpectedViolation } from '$lib/types';
 
@@ -39,45 +39,56 @@
 </script>
 
 <div class="border border-gray-200 rounded-lg p-4 space-y-3 {className}">
-	<Input
-		label="Rule name"
-		type="text"
-		bind:value={violation.rule}
-		error={errors.rule}
-		required
-	/>
-	
-	<Input
-		label="Violating text snippet"
-		type="text"
-		bind:value={violation.text}
-		error={errors.text}
-		required
-	/>
-	
-	<Input
-		label="Reason (optional)"
-		type="text"
-		value={violation.reason ?? ''}
-		error={errors.reason}
-	/>
-	
-	<Input
-		label="Link to rule"
-		type="url"
-		bind:value={violation.link}
-		error={errors.link}
-		required
-	/>
-	
+	<div class="space-y-1">
+		<Label.Root>Rule name</Label.Root>
+		<Input.Root
+			type="text"
+			bind:value={violation.rule}
+			onblur={() => validateField('rule')}
+			required
+		/>
+		{#if errors.rule}
+			<p class="text-xs text-destructive">{errors.rule}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Violating text snippet</Label.Root>
+		<Input.Root
+			type="text"
+			bind:value={violation.text}
+			onblur={() => validateField('text')}
+			required
+		/>
+		{#if errors.text}
+			<p class="text-xs text-destructive">{errors.text}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Reason (optional)</Label.Root>
+		<Input.Root type="text" bind:value={violation.reason} onblur={() => validateField('reason')} />
+		{#if errors.reason}
+			<p class="text-xs text-destructive">{errors.reason}</p>
+		{/if}
+	</div>
+
+	<div class="space-y-1">
+		<Label.Root>Link to rule</Label.Root>
+		<Input.Root
+			type="url"
+			bind:value={violation.link}
+			onblur={() => validateField('link')}
+			required
+		/>
+		{#if errors.link}
+			<p class="text-xs text-destructive">{errors.link}</p>
+		{/if}
+	</div>
+
 	{#if showRemove && onRemove}
-		<Button
-			variant="danger"
-			size="sm"
-			onclick={onRemove}
-			class="w-full"
-		>
+		<Button.Root variant="destructive" size="sm" onclick={onRemove} class="w-full">
 			Remove Violation
-		</Button>
+		</Button.Root>
 	{/if}
 </div>

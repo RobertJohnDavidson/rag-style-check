@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Select } from '$lib/components/ui';
+	import { Select, Label } from '$lib/components/ui';
 	import { ManualForm, ArticleForm, SyntheticForm } from '.';
 
 	interface Props {
@@ -28,14 +28,25 @@
 </script>
 
 <div class="space-y-4">
-	<Select
-		label="Generation Method"
-		bind:value={method}
-	>
-		<option value="manual">Manual Entry</option>
-		<option value="article">From CBC Article</option>
-		<option value="synthetic">Generate Synthetic</option>
-	</Select>
+	<div class="space-y-2">
+		<Label.Root>Generation Method</Label.Root>
+		<Select.Root type="single" bind:value={method}>
+			<Select.Trigger class="w-full">
+				{#if method === 'manual'}
+					Manual Entry
+				{:else if method === 'article'}
+					From CBC Article
+				{:else if method === 'synthetic'}
+					Generate Synthetic
+				{/if}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="manual" label="Manual Entry" />
+				<Select.Item value="article" label="From CBC Article" />
+				<Select.Item value="synthetic" label="Generate Synthetic" />
+			</Select.Content>
+		</Select.Root>
+	</div>
 
 	{#if method === 'manual'}
 		<ManualForm {onUnsavedChanges} onRegisterReset={handleRegisterReset} />

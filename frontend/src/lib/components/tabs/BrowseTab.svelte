@@ -3,6 +3,7 @@
 	import { Input, Select, Button, LoadingSpinner, Alert } from '$lib/components/ui';
 	import { TestCard } from '$lib/components/tests';
 	import { loadTests as apiLoadTests, deleteTest as apiDeleteTest } from '$lib/api';
+	import { LoaderCircle, Search } from '@lucide/svelte';
 
 	interface Props {
 		onSelectTest?: (testId: string) => void;
@@ -17,7 +18,7 @@
 	let page = $state(1);
 	let total = $state(0);
 	let search = $state('');
-	let method = $state('');
+	let method = $state<string>('');
 
 	// Load tests on mount
 	$effect(() => {
@@ -89,42 +90,49 @@
 <div class="space-y-4">
 	<!-- Search and Filter -->
 	<div class="flex gap-4">
-		<Input
-			type="text"
-			bind:value={search}
-			placeholder="Search tests..."
-			class="flex-1"
-		/>
-		
-		<Select
-			bind:value={method}
-			class="w-48"
-		>
-			<option value="">All Methods</option>
-			<option value="manual">Manual</option>
-			<option value="article">From Article</option>
-			<option value="synthetic">Synthetic</option>
-		</Select>
-		
-		<Button
-			variant="primary"
-			onclick={loadTests}
-		>
+		<Input.Root type="text" bind:value={search} placeholder="Search tests..." class="flex-1" />
+
+		<Select.Root type="single" bind:value={method}>
+			<Select.Trigger class="w-48">
+				{#if method === ''}
+					All Methods
+				{:else if method === 'manual'}
+					Manual
+				{:else if method === 'article'}
+					From Article
+				{:else if method === 'synthetic'}
+					Synthetic
+				{/if}
+			</Select.Trigger>
+			<Select.Content>
+				<Select.Item value="" label="All Methods" />
+				<Select.Item value="manual" label="Manual" />
+				<Select.Item value="article" label="From Article" />
+				<Select.Item value="synthetic" label="Synthetic" />
+			</Select.Content>
+		</Select.Root>
+
+		<Button.Root onclick={loadTests} disabled={loading}>
+			{#if loading}
+				<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+			{:else}
+				<Search class="mr-2 h-4 w-4" />
+			{/if}
 			Search
-		</Button>
+		</Button.Root>
 	</div>
 
 	<!-- Loading state -->
-	{#if loading}
+	{#if loading && tests.length === 0}
 		<div class="flex justify-center py-8">
 			<LoadingSpinner size="lg" />
 		</div>
 	{:else if error}
-		<Alert variant="error">{error}</Alert>
+		<Alert.Root variant="destructive">
+			<Alert.Description>{error}</Alert.Description>
+		</Alert.Root>
 	{:else if tests.length === 0}
-		<div class="text-center py-8 text-gray-500">
-			No tests found
-		</div>
+		<div class="text-center py-8 text-gray-500">No tests found</div>
 	{:else}
 		<!-- Test List -->
 		<div class="space-y-3">
@@ -133,6 +141,7 @@
 					{test}
 					onRun={onSelectTest ? () => onSelectTest(test.id) : undefined}
 					onDelete={() => handleDelete(test.id)}
+					{loading}
 				/>
 			{/each}
 		</div>
@@ -143,22 +152,22 @@
 				Showing {tests.length} of {total} tests
 			</div>
 			<div class="flex gap-2">
-				<Button
+				<Button.Root
 					variant="secondary"
 					size="sm"
 					onclick={handlePrevious}
-					disabled={!hasPrevious}
+					disabled={!hasPrevious || loading}
 				>
 					Previous
-				</Button>
-				<Button
+				</Button.Root>
+				<Button.Root
 					variant="secondary"
 					size="sm"
 					onclick={handleNext}
-					disabled={!hasNext}
+					disabled={!hasNext || loading}
 				>
 					Next
-				</Button>
+				</Button.Root>
 			</div>
 		</div>
 	{/if}

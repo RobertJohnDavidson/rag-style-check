@@ -1,33 +1,23 @@
 <script lang="ts">
-	// Loading spinner component with CBC red color
-	
-	type Size = 'sm' | 'md' | 'lg';
-	
-	interface Props {
-		size?: Size;
-	}
-	
-	let { size = 'md' }: Props = $props();
-	
+	import { LoaderCircle } from "@lucide/svelte";
+	import { cn } from "$lib/utils";
+
+	let { 
+		size = "md",
+		class: className = "" 
+	}: { 
+		size?: "sm" | "md" | "lg" | "xl";
+		class?: string;
+	} = $props();
+
 	const sizeClasses = {
-		sm: 'w-4 h-4 border-2',
-		md: 'w-8 h-8 border-3',
-		lg: 'w-12 h-12 border-4'
+		sm: "h-4 w-4",
+		md: "h-6 w-6",
+		lg: "h-8 w-8",
+		xl: "h-12 w-12"
 	};
 </script>
 
-<div class="inline-block {sizeClasses[size]} border-[#CC0000] border-t-transparent rounded-full animate-spin" role="status" aria-label="Loading">
-	<span class="sr-only">Loading...</span>
+<div class={cn('flex items-center justify-center', className)}>
+	<LoaderCircle class={cn('animate-spin text-primary', sizeClasses[size])} />
 </div>
-
-<style>
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-	
-	.animate-spin {
-		animation: spin 0.8s linear infinite;
-	}
-</style>

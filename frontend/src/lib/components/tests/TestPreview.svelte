@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { Test } from '$lib/types';
-	import { Card, Button } from '$lib/components/ui';
+	import { Card, Button, Label, Input, Textarea } from '$lib/components/ui';
 	import { ViolationEditor } from '$lib/components/forms';
+	import { LoaderCircle, Save } from '@lucide/svelte';
 
 	interface Props {
 		test: Test;
@@ -12,7 +13,7 @@
 	}
 
 	let { 
-		test, 
+		test = $bindable(), 
 		onSave, 
 		onCancel,
 		loading = false,
@@ -24,81 +25,66 @@
 	}
 </script>
 
-<Card class={className}>
-	<div class="space-y-4">
-		<!-- Label -->
-		<div>
-			<label class="block text-xs font-medium text-gray-600 mb-1">Label</label>
-			<input
-			type="text"
-			bind:value={test.label}
-			class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CC0000]"
-			disabled={loading}
-			/>
-		</div>
-
-		<!-- Text -->
-		<div>
-			<label class="block text-xs font-medium text-gray-600 mb-1">Text</label>
-			<textarea
-			bind:value={test.text}
-			rows="4"
-			class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CC0000] text-sm"
-			disabled={loading}
-			></textarea>
-		</div>
-
-		<!-- Expected Violations -->
-		<div>
-			<label class="block text-xs font-medium text-gray-600 mb-2">Expected Violations</label>
-			<div class="space-y-3">
-				{#each test.expected_violations as violation, i (i)}
-					<ViolationEditor
-						bind:violation={test.expected_violations[i]}
-						onRemove={() => removeViolation(i)}
-						showRemove={true}
-					/>
-				{/each}
+<Card.Root class={className}>
+	<Card.Content class="pt-6">
+		<div class="space-y-4">
+			<!-- Label -->
+			<div class="space-y-1.5">
+				<Label.Root>Label</Label.Root>
+				<Input.Root type="text" bind:value={test.label} disabled={loading} />
 			</div>
+
+			<!-- Text -->
+			<div class="space-y-1.5">
+				<Label.Root>Text</Label.Root>
+				<Textarea.Root bind:value={test.text} rows={4} class="text-sm" disabled={loading} />
+			</div>
+
+			<!-- Expected Violations -->
+			<div class="space-y-2">
+				<Label.Root class="text-base">Expected Violations</Label.Root>
+				<div class="space-y-3">
+					{#each test.expected_violations as violation, i (i)}
+						<ViolationEditor
+							bind:violation={test.expected_violations[i]}
+							onRemove={() => removeViolation(i)}
+							showRemove={true}
+						/>
+					{/each}
+				</div>
+			</div>
+
+			<!-- Notes (if present) -->
+			{#if test.notes !== undefined}
+				<div class="space-y-1.5">
+					<Label.Root>Notes</Label.Root>
+					<Textarea.Root bind:value={test.notes} rows={2} class="text-sm" disabled={loading} />
+				</div>
+			{/if}
+
+			<!-- Actions -->
+			{#if onSave || onCancel}
+				<div class="flex gap-3 pt-2">
+					{#if onSave}
+						<Button.Root
+							onclick={onSave}
+							disabled={loading}
+							class="flex-1 bg-green-600 hover:bg-green-700 text-white"
+						>
+							{#if loading}
+								<LoaderCircle class="mr-2 h-4 w-4 animate-spin" />
+							{/if}
+							Save Test
+						</Button.Root>
+					{/if}
+
+					{#if onCancel}
+						<Button.Root variant="secondary" onclick={onCancel} disabled={loading}>
+							Cancel
+						</Button.Root>
+					{/if}
+				</div>
+			{/if}
 		</div>
-
-		<!-- Notes (if present) -->
-		{#if test.notes}
-			<div>
-				<label class="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-				<textarea
-				bind:value={test.notes}
-				rows="2"
-				class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#CC0000] text-sm"
-				disabled={loading}
-				></textarea>
-			</div>
-		{/if}
-
-		<!-- Actions -->
-		{#if onSave || onCancel}
-			<div class="flex gap-3 pt-2">
-				{#if onSave}
-					<Button
-						variant="success"
-						onclick={onSave}
-						{loading}
-						class="flex-1"
-					>
-						Save Test
-					</Button>
-				{/if}
-				
-				{#if onCancel}
-					<Button
-						variant="secondary"
-						onclick={onCancel}
-						{loading}
-					>
-						Cancel
-					</Button>
-				{/if}
-			</div>
-		{/if}
-	</div>
-</Card>
+	</Card.Content>
+</Card.Root>
