@@ -78,8 +78,6 @@ class StyleAuditor:
     
     def __init__(
         self,
-        llm: GoogleGenAI,
-        retriever: Optional[BaseRetriever] = None,
         index: Optional[VectorStoreIndex] = None,
         config: Optional[AuditorConfig] = None,
     ):
@@ -87,29 +85,29 @@ class StyleAuditor:
         Initialize the Auditor.
         """
         self.config = config or AuditorConfig()
-        self.base_llm = llm # Default/Base Audit LLM
         self.index = index
         self.external_retriever = retriever
 
-        # Fixed Rerank LLM (always lite)
+        # Fixed Rerank LLM (always lite, stable for reranking)
         self.rerank_llm = GoogleGenAI(
             model=settings.RERANK_MODEL,
-            temperature=0.0, # Stable for reranking
+            temperature=0.0,
             vertexai_config={
                 "project": settings.PROJECT_ID,
                 "location": settings.LLM_REGION
             }
         )
         
-        logger.info(f"🔧 Auditor initialized with Base Model: {self.base_llm.model}")
+        logger.info(f"🔧 Auditor initialized with Base Model: {self.config.model_name}")
         logger.info(f"🔧 Rerank Model: {settings.RERANK_MODEL}")
 
     def _get_llm_for_run(self, config: AuditorConfig) -> GoogleGenAI:
-        """Get LLM instance configured for the run."""
-        # Only create new one if config differs significantly from base
+        """
+        Create LLM instance configured entirely by the run config.
+        No caching—always create fresh to ensure config isolation.
+        """
         generation_config = {}
-        if config.model_name == self.base_llm.model:
-            return self.base_llm
+        
         if config.include_thinking:
             # Gemini 2.x models use thinking_budget, 3.x+ use thinking_level
             if "2." in config.model_name:
@@ -122,7 +120,7 @@ class StyleAuditor:
                     "includeThoughts": True,
                     "thinking_level": "medium"  # Options: low, medium, high
                 }
-            
+        
         return GoogleGenAI(
             model=config.model_name,
             temperature=config.temperature,

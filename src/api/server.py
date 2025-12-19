@@ -11,10 +11,8 @@ from fastapi import FastAPI, HTTPException, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from contextlib import asynccontextmanager
-import json
-import os
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID
@@ -38,7 +36,6 @@ from src.api.schemas import (
     AuditRequest,
     AuditResponse,
     Violation,
-    ModelInfo,
     GenerateTextResponse
 )
 from src.api.test_schemas import (
@@ -49,8 +46,7 @@ from src.api.test_schemas import (
     TestMetrics,
     DetectedViolation,
     TestListResponse,
-    TestResultListResponse,
-    TestUpdateInput,
+
     ModelListResponse,
     ModelInfo as TestModelInfo,
     GenerateTestsRequest
@@ -112,21 +108,9 @@ async def lifespan(app: FastAPI):
     else:
         index = None
 
-    # 4. LLM
-    llm = GoogleGenAI(
-        model=settings.DEFAULT_MODEL,
-        vertexai_config={
-            "project": settings.PROJECT_ID,
-            "location": settings.LLM_REGION
-        },
-        temperature=0.1
-    )
-    LlamaSettings.llm = llm
-
     # 5. Initialize Auditor
     if index:
         auditor = StyleAuditor(
-            llm=llm,
             index=index
         )
         print("✅ StyleAuditor initialized.")

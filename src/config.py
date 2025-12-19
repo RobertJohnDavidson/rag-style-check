@@ -51,7 +51,7 @@ class AppSettings(BaseModel):
     DEFAULT_AGGREGATED_RULE_LIMIT: int = 40
     DEFAULT_MAX_AGENT_ITERATIONS: int = 1
     DEFAULT_CONFIDENCE_THRESHOLD: float = 10.0
-
+    DEFAULT_LLM_TEMPERATURE: float = 0.0
     def validate_env(self):
         if not self.PROJECT_ID:
             raise ValueError("PROJECT_NAME not found in environment variables.")
