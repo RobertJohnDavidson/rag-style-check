@@ -148,7 +148,7 @@
 				rule: v.rule,
 				text: v.text,
 				reason: v.reason,
-				link: v.source_url || ''
+				link: v.url || ''
 			})),
 			generation_method: 'manual'
 		});
@@ -201,10 +201,8 @@
 			<div class="flex items-center gap-2">
 				<Zap class="h-6 w-6 text-primary fill-primary" />
 				<span class="font-bold inline-block"
-					>Style Auditor <span
-						class="text-muted-foreground font-normal ml-1 text-xs uppercase tracking-widest"
-						>Tuning</span
-					></span
+					>Style Auditor 
+					</span
 				>
 			</div>
 

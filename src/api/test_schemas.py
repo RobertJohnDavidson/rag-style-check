@@ -128,7 +128,7 @@ class DetectedViolation(BaseModel):
     rule: str
     reason: str
     confidence: Optional[float] = None
-    source_url: Optional[str] = None
+    url: Optional[str] = None
 
 
 class TestMetrics(BaseModel):

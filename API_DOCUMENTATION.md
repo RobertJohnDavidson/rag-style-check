@@ -89,6 +89,7 @@ python run_server.py --host 127.0.0.1 --port 8080
 ### Interactive API Documentation
 
 Once running, visit:
+
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **OpenAPI JSON**: http://localhost:8000/openapi.json
@@ -102,6 +103,7 @@ GET /
 ```
 
 **Response:**
+
 ```json
 {
   "service": "CBC News Style Checker",
@@ -120,14 +122,16 @@ Content-Type: application/json
 ```
 
 **Request Body:**
+
 ```json
 {
   "text": "The Cabinet met yesterday to discuss the Alberta government's new policy.",
-  "model": "models/gemini-2.5-flash"  // Optional
+  "model": "models/gemini-2.5-flash" // Optional
 }
 ```
 
 **Response:**
+
 ```json
 {
   "violations": [
@@ -135,13 +139,13 @@ Content-Type: application/json
       "text": "Cabinet",
       "rule": "Cabinet",
       "reason": "Should be lowercase 'cabinet' when referring to the federal or provincial cabinet in general.",
-      "source_url": "https://www.cbc.ca/newsinteractives/style/cabinet"
+      "url": "https://www.cbc.ca/newsinteractives/style/cabinet"
     },
     {
       "text": "Alberta government",
       "rule": "Government",
       "reason": "Should be 'Alberta Government' with capital G when referring to the specific governing body.",
-      "source_url": "https://www.cbc.ca/newsinteractives/style/government"
+      "url": "https://www.cbc.ca/newsinteractives/style/government"
     }
   ],
   "metadata": {
@@ -153,6 +157,7 @@ Content-Type: application/json
 ```
 
 **How it works:**
+
 1. Splits text into paragraphs
 2. For each paragraph, extracts sentences
 3. Retrieves relevant style rules from ChromaDB using sentence embeddings
@@ -170,13 +175,14 @@ GET /models
 ```
 
 **Response:**
+
 ```json
 [
   {
     "name": "gemini-2.5-flash",
     "description": "Fast, cost-effective model for production use",
     "available": true
-  },
+  }
 ]
 ```
 
@@ -191,6 +197,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Request Body:**
+
 ```json
 {
   "suite_name": "december_2024_tests",
@@ -202,7 +209,7 @@ X-API-Key: your-api-key-here
         {
           "rule": "Cabinet",
           "text": "Cabinet",
-          "source_url": "https://www.cbc.ca/newsinteractives/style/cabinet"
+          "url": "https://www.cbc.ca/newsinteractives/style/cabinet"
         }
       ]
     }
@@ -211,6 +218,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Test suite created successfully",
@@ -220,6 +228,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Authentication:**
+
 - Requires `X-API-Key` header
 - Default key (dev): `dev-key-change-in-production`
 - Configure via `API_KEY` environment variable
@@ -235,6 +244,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Request Body:**
+
 ```json
 {
   "file_path": "tests/generated_tests_complex.json"
@@ -242,6 +252,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Response:**
+
 ```json
 {
   "true_positives": 12,
@@ -267,6 +278,7 @@ X-API-Key: your-api-key-here
 ```
 
 **Metrics Explained:**
+
 - **True Positive (TP)**: Correctly identified violation
 - **False Positive (FP)**: Incorrectly flagged non-violation
 - **False Negative (FN)**: Missed actual violation
@@ -284,6 +296,7 @@ GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -297,16 +310,18 @@ GET /health
 ## Request/Response Schemas
 
 ### Violation Schema
+
 ```python
 {
   "text": str,          # The violating text snippet
   "rule": str,          # Rule name from style guide
   "reason": str,        # Why this violates the rule
-  "source_url": str?    # Optional URL to style guide section
+  "url": str?    # Optional URL to style guide section
 }
 ```
 
 ### AuditRequest Schema
+
 ```python
 {
   "text": str,          # Text to audit (required)
@@ -315,6 +330,7 @@ GET /health
 ```
 
 ### TestCase Schema
+
 ```python
 {
   "id": str,                      # Unique test identifier
@@ -323,7 +339,7 @@ GET /health
     {
       "rule": str,
       "text": str,
-      "source_url": str?
+      "url": str?
     }
   ]
 }
@@ -340,6 +356,7 @@ allow_origins=["*"]  # Configure this for production!
 ```
 
 **Production recommendation:**
+
 ```python
 allow_origins=[
     "https://yourdomain.com",
@@ -352,6 +369,7 @@ allow_origins=[
 ## Error Handling
 
 ### Standard Error Response
+
 ```json
 {
   "detail": "Error message describing what went wrong"
@@ -360,19 +378,20 @@ allow_origins=[
 
 ### Common HTTP Status Codes
 
-| Code | Meaning | Cause |
-|------|---------|-------|
-| 200 | Success | Request completed successfully |
-| 201 | Created | Test suite created successfully |
-| 403 | Forbidden | Invalid or missing API key |
-| 404 | Not Found | Test file doesn't exist |
-| 500 | Internal Server Error | Auditor failure, LLM timeout, etc. |
+| Code | Meaning               | Cause                              |
+| ---- | --------------------- | ---------------------------------- |
+| 200  | Success               | Request completed successfully     |
+| 201  | Created               | Test suite created successfully    |
+| 403  | Forbidden             | Invalid or missing API key         |
+| 404  | Not Found             | Test file doesn't exist            |
+| 500  | Internal Server Error | Auditor failure, LLM timeout, etc. |
 
 ---
 
 ## Performance Considerations
 
 ### Auditor Initialization
+
 - The `StyleAuditor` is initialized as a **singleton**
 - First request may be slow (~5-10s) due to:
   - ChromaDB connection
@@ -381,18 +400,22 @@ allow_origins=[
 - Subsequent requests are much faster (~1-3s)
 
 ### Request Processing Time
+
 Typical `/audit` endpoint timing:
+
 - Simple paragraph (1-2 sentences): 1-2 seconds
 - Complex paragraph (5+ sentences): 2-4 seconds
 - Multiple paragraphs: 3-6 seconds
 
 Factors affecting speed:
+
 - Number of paragraphs
 - Number of sentences per paragraph
 - Agentic iteration count (1-3 iterations)
 - LLM response time
 
 ### Optimization Tips
+
 1. **Batch processing**: For multiple texts, consider implementing a batch endpoint
 2. **Caching**: Add Redis for repeated identical requests
 3. **Async processing**: For UI responsiveness, use background tasks with job IDs
@@ -405,6 +428,7 @@ Factors affecting speed:
 ### API Key Authentication
 
 Protected endpoints require authentication:
+
 ```bash
 curl -X POST http://localhost:8000/tests \
   -H "Content-Type: application/json" \
@@ -413,6 +437,7 @@ curl -X POST http://localhost:8000/tests \
 ```
 
 ### Production Checklist
+
 - [ ] Change `API_KEY` environment variable
 - [ ] Configure CORS origins whitelist
 - [ ] Enable HTTPS/TLS
@@ -426,6 +451,7 @@ curl -X POST http://localhost:8000/tests \
 ## Development
 
 ### Project Structure
+
 ```
 src/
 ├── api/
@@ -441,12 +467,14 @@ src/
 ### Adding New Endpoints
 
 1. Define schema in `src/api/schemas.py`:
+
 ```python
 class MyRequest(BaseModel):
     field: str = Field(..., description="Description")
 ```
 
 2. Add endpoint in `src/api/server.py`:
+
 ```python
 @app.post("/my-endpoint")
 async def my_endpoint(
@@ -460,6 +488,7 @@ async def my_endpoint(
 3. Document in this file!
 
 ### Running Tests
+
 ```bash
 # Test auditor directly
 python tests/run_tests.py --file tests/generated_tests_complex.json
@@ -477,6 +506,7 @@ curl http://localhost:8000/audit \
 ### Docker (Recommended)
 
 Create `Dockerfile`:
+
 ```dockerfile
 FROM python:3.12-slim
 
@@ -490,12 +520,14 @@ CMD ["python", "run_server.py", "--production", "--host", "0.0.0.0", "--port", "
 ```
 
 Build and run:
+
 ```bash
 docker build -t cbc-style-checker .
 docker run -p 8000:8000 --env-file .env cbc-style-checker
 ```
 
 ### Cloud Run / App Engine
+
 ```bash
 # Deploy to Google Cloud Run
 gcloud run deploy cbc-style-checker \
@@ -505,6 +537,7 @@ gcloud run deploy cbc-style-checker \
 ```
 
 ### Traditional Server
+
 ```bash
 # Use gunicorn for production
 pip install gunicorn
@@ -519,23 +552,30 @@ gunicorn src.api.server:app \
 ## Troubleshooting
 
 ### Issue: "ModuleNotFoundError: No module named 'src'"
+
 **Solution:** Run from project root:
+
 ```bash
 cd /path/to/newslabs-rag-style-checker
 python run_server.py
 ```
 
 ### Issue: "PROJECT_NAME not found in environment variables"
+
 **Solution:** Create `.env` file with required variables (see Configuration section)
 
 ### Issue: ChromaDB connection fails
+
 **Solution:** Verify `DB_PATH` exists and contains `chroma.sqlite3`:
+
 ```bash
 ls -la ./db/chroma_db/
 ```
 
 ### Issue: Slow first request
+
 **Solution:** This is normal! Auditor initializes on first request. Consider pre-warming:
+
 ```python
 # Add to server.py startup
 @app.on_event("startup")
@@ -544,7 +584,9 @@ async def startup_event():
 ```
 
 ### Issue: "VertexAIRerank class not found"
+
 **Solution:** Reranker is optional. If needed, ensure `google-cloud-discoveryengine` is installed:
+
 ```bash
 pip install google-cloud-discoveryengine
 ```
@@ -554,6 +596,7 @@ pip install google-cloud-discoveryengine
 ## Examples
 
 ### Python Client
+
 ```python
 import requests
 
@@ -568,22 +611,24 @@ for v in violations:
 ```
 
 ### JavaScript/TypeScript Client
+
 ```typescript
-const response = await fetch('http://localhost:8000/audit', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
+const response = await fetch("http://localhost:8000/audit", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    text: "The Cabinet announced new measures."
-  })
+    text: "The Cabinet announced new measures.",
+  }),
 });
 
 const { violations } = await response.json();
-violations.forEach(v => {
+violations.forEach((v) => {
   console.log(`❌ ${v.text}: ${v.reason}`);
 });
 ```
 
 ### cURL
+
 ```bash
 curl -X POST http://localhost:8000/audit \
   -H "Content-Type: application/json" \

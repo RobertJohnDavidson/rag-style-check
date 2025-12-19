@@ -56,7 +56,7 @@ export interface Violation {
 	rule: string;
 	text: string;
 	reason: string;
-	source_url?: string;
+	url?: string;
 }
 
 export interface TestResult {

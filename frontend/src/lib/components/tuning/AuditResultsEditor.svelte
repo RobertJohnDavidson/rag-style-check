@@ -15,7 +15,7 @@
 	let approvedIndices = $state<Set<number>>(new Set());
 
 	function isComplete(v: Violation) {
-		return !!v.rule?.trim() && !!v.text?.trim() && !!v.reason?.trim() && !!v.source_url?.trim();
+		return !!v.rule?.trim() && !!v.text?.trim() && !!v.reason?.trim() && !!v.url?.trim();
 	}
 
 	function canSave() {
@@ -49,7 +49,7 @@
 
 	function addViolation() {
 		editableViolations = [
-			{ text: '', rule: 'Custom Rule', reason: '', source_url: '' },
+			{ text: '', rule: 'Custom Rule', reason: '', url: '' },
 			...editableViolations
 		];
 		// shift existing approvals and approve the new top item
@@ -127,17 +127,17 @@
 
 					<div class="space-y-1">
 						<Label.Root>Style Guide Link</Label.Root>
-						<Input.Root bind:value={v.source_url} placeholder="https://..." type="url" />
+						<Input.Root bind:value={v.url} placeholder="https://..." type="url" />
 					</div>
 
 					{#if approvedIndices.has(i) && !isComplete(v)}
 						<p class="text-xs text-amber-600">Fill all fields before saving this violation.</p>
 					{/if}
 
-					{#if v.source_url}
+					{#if v.url}
 						<div class="pt-2 border-t border-border">
 							<a
-								href={v.source_url}
+								href={v.url}
 								target="_blank"
 								class="text-xs text-primary hover:underline flex items-center gap-1"
 							>

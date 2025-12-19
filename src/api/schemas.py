@@ -18,7 +18,7 @@ class Violation(BaseModel):
     text: str = Field(..., description="The text snippet that violates the rule")
     rule: str = Field(..., description="The rule name or guideline violated")
     reason: str = Field(..., description="Explanation of why this is a violation")
-    source_url: Optional[str] = Field(None, description="URL to the style guide section")
+    url: Optional[str] = Field(None, description="URL to the style guide section")
 
 
 class AuditResponse(BaseModel):

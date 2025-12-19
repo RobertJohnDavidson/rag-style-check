@@ -43,7 +43,7 @@ class Violation(BaseModel):
     suggested_fix: str = Field(description="Correction or 'omit'")
     rule_id: str = Field(description="ID of the violated rule (e.g. RULE_123)")
     rule_name: Optional[str] = Field(description="Name of the rule", default=None)
-    source_url: Optional[str] = Field(description="URL of the rule", default=None)
+    url: Optional[str] = Field(description="URL of the rule", default=None)
 
 class AuditResult(BaseModel):
     thinking: Optional[str] = Field(description="Chain of thought or reasoning process", default=None)
@@ -518,7 +518,7 @@ class StyleAuditor:
                 "correction": v.suggested_fix,
                 "rule_id": v.rule_id,
                 "rule_name": v.rule_name or rule_info.get('term'),
-                "source_url": v.source_url or rule_info.get('url'),
+                "url": v.url or rule_info.get('url'),
                 "paragraph": paragraph,
                 "start_index": start,
                 "end_index": end

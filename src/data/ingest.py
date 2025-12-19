@@ -2,6 +2,7 @@ import os
 import json
 import glob
 from pathlib import Path
+from sqlalchemy import text
 from google.cloud import storage
 from dotenv import load_dotenv
 from llama_index.core import Settings
@@ -93,7 +94,9 @@ def load_nodes_from_gcs(gcs_path):
     
     print(f"☁️  Connecting to GCS Bucket: {bucket_name}, Prefix: {prefix}")
     try:
-        storage_client = storage.Client()
+        storage_client = storage.Client(
+            project=os.getenv("PROJECT_NAME")
+        )
         bucket = storage_client.bucket(bucket_name)
         blobs = bucket.list_blobs(prefix=prefix)
         
@@ -141,7 +144,14 @@ def load_nodes(directory):
     print(f"📊 Loaded {total_entries} entries → {len(nodes)} nodes from {len(files)} files")
     return nodes
 
-
+def clear_vector_store(engine):
+    with engine.connect() as conn:
+        # We use TRUNCATE instead of DELETE because it is faster 
+        # and resets the internal identity counters.
+        print(f"🧹 Clearing table {settings.ACTUAL_TABLE_NAME}...")
+        conn.execute(text(f"TRUNCATE TABLE {settings.ACTUAL_TABLE_NAME}"))
+        conn.commit()
+        print("✅ Table cleared.")
 
 
 
@@ -160,6 +170,7 @@ def main():
     # 2. Create Engines & Vector Store
     engine = get_sync_engine()
     async_engine = get_async_engine()
+    clear_vector_store(engine)
     vector_store = init_vector_store_for_ingest(engine, async_engine)
 
     # --- NEW CACHING LOGIC STARTS HERE ---

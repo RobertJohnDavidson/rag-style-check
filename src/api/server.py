@@ -239,8 +239,8 @@ async def audit_text(
                 text=v.get("text", ""),
                 rule=v.get("rule_name", "Unknown"),
                 reason=v.get("violation", ""),
-                # Prefer explicit source_url, but fall back to other url fields
-                source_url=v.get("source_url")
+                # Prefer explicit url, but fall back to other url fields
+                url=v.get("url")
             )
             for v in violations_dicts
         ]
@@ -462,7 +462,7 @@ async def run_test(
                 rule=v.get("rule_name", "Unknown"),
                 reason=v.get("violation", ""),
                 confidence=None,
-                source_url=v.get("source_url")
+                url=v.get("url")
             )
             for v in detected
         ]
@@ -474,7 +474,7 @@ async def run_test(
         fn = 0
         
         expected_rules = set(v['link'] for v in test_record.expected_violations if v.get('link'))
-        detected_rules = set(v.source_url for v in detected_violations if v.source_url)
+        detected_rules = set(v.url for v in detected_violations if v.url)
         
         tp = len(expected_rules.intersection(detected_rules))
         fp = len(detected_rules - expected_rules)
