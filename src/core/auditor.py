@@ -1,6 +1,5 @@
 import logging
-import asyncio
-import json
+from datetime import datetime
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 
@@ -25,6 +24,7 @@ from src.core.utils import (
     find_span_indices,
     deduplicate_violations
 )
+from llama_index.core import Settings as LlamaSettings
 
 # Optional Reranker
 try:
@@ -78,11 +78,13 @@ class StyleAuditor:
     
     def __init__(
         self,
+        retriever: Optional[BaseRetriever] = None,
         index: Optional[VectorStoreIndex] = None,
         config: Optional[AuditorConfig] = None,
     ):
         """
         Initialize the Auditor.
+        LLM instances are created on-demand per run based on config.
         """
         self.config = config or AuditorConfig()
         self.index = index
@@ -478,6 +480,8 @@ class StyleAuditor:
         return out
 
     def _build_prompt(self, paragraph, contexts, violations, iteration, config: AuditorConfig):
+        # Get current date for grounding
+        current_date = datetime.now().strftime("%B %d, %Y")
         context_lines = [
             f"{c['id']} | Rule: {c['term']}\nGuideline: {c['text']}" 
             for c in contexts
@@ -493,7 +497,7 @@ class StyleAuditor:
             system_prompt += "\nExplain your thinking process clearly in the 'thinking' field before listing violations."
 
         # Return the FORMATTED prompt string
-        return system_prompt + "\n" + PROMPT_AUDIT_USER_TEMPLATE.format(
+        return system_prompt.format(current_date=current_date) + "\n" + PROMPT_AUDIT_USER_TEMPLATE.format(
             paragraph=paragraph,
             context_block=context_block,
             reflection_block=reflection_block

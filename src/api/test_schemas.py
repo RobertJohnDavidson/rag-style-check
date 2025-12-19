@@ -42,14 +42,14 @@ class TuningParameters(BaseModel):
         description="LLM model to use for auditing"
     )
     temperature: float = Field(
-        default=0.1,
+        default=settings.DEFAULT_LLM_TEMPERATURE,
         ge=0.0,
         le=2.0,
         description="LLM temperature (0.0-2.0)"
     )
     initial_retrieval_count: int = Field(
         default=settings.DEFAULT_INITIAL_RETRIEVAL_COUNT,
-        ge=10,
+        ge=20,
         le=200,
         description="Number of rules to retrieve initially"
     )
