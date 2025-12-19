@@ -398,34 +398,6 @@ async def get_test(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get test: {str(e)}")
 
-@app.patch("/api/tests/{test_id}", response_model=TestRecord)
-async def update_test(
-    test_id: UUID,
-    update: TestUpdateInput,
-    manager: TestManager = Depends(get_test_manager_instance)
-):
-    try:
-        expected_violations = None
-        if update.expected_violations is not None:
-            expected_violations = [v.model_dump() for v in update.expected_violations]
-        
-        test_dict = await manager.update_test(
-            test_id=test_id,
-            label=update.label,
-            text=update.text,
-            expected_violations=expected_violations,
-            notes=update.notes
-        )
-        
-        if not test_dict:
-            raise HTTPException(status_code=404, detail="Test not found")
-        
-        return TestRecord(**test_dict)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update test: {str(e)}")
-
 @app.delete("/api/tests/{test_id}", status_code=204)
 async def delete_test(
     test_id: UUID,
@@ -541,24 +513,6 @@ async def run_test(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to run test: {str(e)}")
-    
-@app.get("/api/tests/{test_id}/results", response_model=TestResultListResponse)
-async def get_test_results(
-    test_id: UUID,
-    page: int = 1,
-    page_size: int = 10,
-    manager: TestManager = Depends(get_test_manager_instance)
-):
-    try:
-        results, total = await manager.get_test_results(test_id=test_id, page=page, page_size=page_size)
-        from src.api.test_schemas import TestResult
-        return TestResultListResponse(
-            results=[TestResult(**r) for r in results],
-            total=total, page=page, page_size=page_size,
-            has_more=(page * page_size) < total
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get results: {str(e)}")
 
 @app.get("/api/tuning-defaults", response_model=TuningParameters)
 async def get_tuning_defaults():
@@ -578,11 +532,11 @@ async def list_available_models_api():
             display_name="Gemini 2.5 Flash Lite",
             supports_thinking=True
         ),
-        TestModelInfo(
-            name="gemini-3-flash-preview", 
-            display_name="Gemini 3.0 Flash Preview",
-            supports_thinking=True
-        ),
+        # TestModelInfo(
+        #     name="gemini-3-flash-preview", 
+        #     display_name="Gemini 3.0 Flash Preview",
+        #     supports_thinking=True
+        # ),
     ]
     return ModelListResponse(models=models)
 
