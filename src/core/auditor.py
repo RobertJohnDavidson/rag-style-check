@@ -20,7 +20,6 @@ from src.core.prompts import (
     STYLE_CATEGORIES
 )
 from src.core.utils import (
-    normalize_text,
     find_span_indices,
     deduplicate_violations
 )
@@ -428,9 +427,7 @@ class StyleAuditor:
         return results, details
 
     async def _classify_text_async(self, text: str) -> List[str]:
-        """Classify text using rerank LLM for speed."""
-        if len(text.split()) < 5:
-            return []
+
         
         prompt_str = PROMPT_CLASSIFY_TAGS.format(
             tags_list_str=", ".join(STYLE_CATEGORIES.split("\n")), 
