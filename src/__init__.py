@@ -1,4 +1,4 @@
-from src.core.auditor.auditor import StyleAuditor
-from src.rag.reranker import VertexAIRerank
+from src.audit.auditor import StyleAuditor
+from src.audit.rerankers import VertexAIRerank
 
 __all__ = ["StyleAuditor", "VertexAIRerank"]

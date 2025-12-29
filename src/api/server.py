@@ -27,8 +27,8 @@ logging.basicConfig(level=logging.INFO)
 # Import Core Components
 from src.config import settings, init_settings
 from src.data.db import get_async_engine, get_sync_engine, init_vector_store, get_async_session
-from src.core.models.log import AuditLog
-from src.core.auditor.auditor import StyleAuditor
+from src.data.models.log import AuditLog
+from src.audit.auditor import StyleAuditor
 from src.evaluation.test_manager import TestManager
 from src.evaluation import test_generator
 from src.audit.prompts import PROMPT_GENERATE_NEWS_TEXT
@@ -247,11 +247,17 @@ async def generate_text_api():
     Generate a high-quality news paragraph using Vertex AI.
     """
     try:
-        # LlamaSettings.llm is initialized in lifespan
-        if not LlamaSettings.llm:
-            raise HTTPException(status_code=503, detail="LLM not initialized")
+        # Instantiate a dedicated LLM for text generation
+        gen_llm = GoogleGenAI(
+            model=settings.DEFAULT_MODEL,
+            temperature=0.7, # slightly creative for generation
+            vertexai_config={
+                "project": settings.PROJECT_ID,
+                "location": settings.LLM_REGION
+            }
+        )
             
-        response = await LlamaSettings.llm.acomplete(PROMPT_GENERATE_NEWS_TEXT)
+        response = await gen_llm.acomplete(PROMPT_GENERATE_NEWS_TEXT)
         return GenerateTextResponse(text=response.text.strip())
     except Exception as e:
         logger.error(f"Text generation failed: {e}")

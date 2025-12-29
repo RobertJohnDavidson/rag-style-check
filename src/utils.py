@@ -4,6 +4,13 @@ def normalize_text(text: str) -> str:
         return ""
     return "".join(c.lower() for c in text if c.isalnum() or c.isspace()).strip()
 
+def split_paragraphs(text: str) -> list[str]:
+    """Split text into paragraphs."""
+    if not text:
+        return []
+    chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
+    return chunks if chunks else [text.strip()]
+
 def find_span_indices(paragraph: str, snippet: str):
     """Find start and end indices of a snippet within a paragraph."""
     if not snippet:

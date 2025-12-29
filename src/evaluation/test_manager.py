@@ -9,8 +9,8 @@ from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.data.db import get_async_session
-from src.core.models.tests import TestCase
-from src.core.models.tests import TestResult
+from src.data.models.tests import TestCase
+from src.data.models.tests import TestResult
 
 
 class TestManager:
