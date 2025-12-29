@@ -1,12 +1,19 @@
 # --- PROMPT TEMPLATES ---
 
 STYLE_CATEGORIES = (
-    "- Capitalization (titles, government terms/ministries, academic/business terms, geographic regions, Court vs court)\n"
-    "- Punctuation (ellipsis, brackets, quotation marks/italics, hyphens vs fused words)\n"
-    "- Spelling (US vs Canadian, 'traveling' vs 'travelling', proper names like Zelenskyy)\n"
-    "- Numbers & Dates (digits vs text, dates, money/currency, one-time vs one time)\n"
-    "- Grammar & Usage (possessives, verb agreement, police vs Police)\n"
-    "- Abbreviations & Titles (cities/states, UN, royal/military ranks)\n"
+   "- **Capitalization**: Case rules (titles, government, academic, business terms, etc.).\n"
+   "- **Punctuation**: Ellipses, brackets, quotation marks, commas, hyphens.\n"
+   "- **Spelling**: Preferred spellings, compound words, Canadian vs U.S. variants.\n"
+   "- **Grammar**: Possessives, verb agreement, clause distinction.\n"
+   "- **Numbers**: Digits vs text, measurements, currency, percentages.\n"
+   "- **Dates & Time**: Months, years, days, time formatting.\n"
+   "- **Geography**: Place names, regions, demonyms, abbreviations for locations.\n"
+   "- **Titles & Ranks**: Military ranks, royal titles, job titles, honorifics.\n"
+   "- **Abbreviations**: Acronyms, initialisms (e.g. UN, U.S.).\n"
+   "- **Formatting**: Italics, bolding, lists.\n"
+   "- **Usage & Diction**: Word choice distinctions (e.g. \"lay vs lie\"), jargon, redundancy.\n"
+   "- **Proper Names**: Specific names of people, organizations, or entities (e.g. \"Zelenskyy\", \"RCMP\").\n"
+   "- **Bias & Sensitivity**: Inclusive language, preferred terminology for groups.\n"
 )
 
 PROMPT_QUERY_GEN = (
@@ -21,7 +28,7 @@ PROMPT_QUERY_GEN = (
 
 PROMPT_CLASSIFY_TAGS = """
 Classify the following text into one or more of these specific style categories: {tags_list_str}.
-Return ONLY a comma-separated list of the applicable categories. If none apply, return "General".
+Return ONLY the category titles (text before any colon) as a comma-separated list. If none apply, return "General".
 
 Text: "{text_snippet}"
 """
