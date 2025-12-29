@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 from typing import List, Optional, Any, Dict
@@ -61,9 +62,10 @@ class AuditorConfig(BaseModel):
     aggregated_rule_limit: int = settings.DEFAULT_AGGREGATED_RULE_LIMIT
     max_agent_iterations: int = settings.DEFAULT_MAX_AGENT_ITERATIONS
     confidence_threshold: float = settings.DEFAULT_CONFIDENCE_THRESHOLD
+    max_concurrent_requests: int = settings.DEFAULT_MAX_CONCURRENT_REQUESTS
     use_query_fusion: bool = True
-    use_llm_rerank: bool = True
-    include_thinking: bool = False
+    use_llm_rerank: bool = False
+    include_thinking: bool = True
 
 class StyleAuditor:
     """
@@ -211,23 +213,50 @@ class StyleAuditor:
 
         logger.info(f"🔍 Auditing {len(paragraphs)} paragraph(s)...")
 
-        # Process paragraphs
-        for i, paragraph in enumerate(paragraphs):
-            paragraph_violations, paragraph_steps = await self._audit_paragraph_agentic(
-                paragraph, 
-                run_config,
-                llm=llm,
-                retriever=retriever,
-                llm_reranker=llm_reranker,
-                vertex_reranker=vertex_reranker
-            )
-            if paragraph_violations:
-                all_violations.extend(paragraph_violations)
-            interim_steps.append({
-                "paragraph_index": i,
-                "text": paragraph,
-                "steps": paragraph_steps
-            })
+        # Process paragraphs concurrently with semaphore
+        semaphore = asyncio.Semaphore(run_config.max_concurrent_requests)
+        
+        async def process_paragraph_with_limit(i: int, paragraph: str):
+            async with semaphore:
+                return i, paragraph, await self._audit_paragraph_agentic(
+                    paragraph, 
+                    run_config,
+                    llm=llm,
+                    retriever=retriever,
+                    llm_reranker=llm_reranker,
+                    vertex_reranker=vertex_reranker
+                )
+        
+        tasks = [
+            process_paragraph_with_limit(i, paragraph)
+            for i, paragraph in enumerate(paragraphs)
+        ]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results and handle errors
+        successful_count = 0
+        for result in results:
+            if isinstance(result, Exception):
+                # Log error but continue with other paragraphs
+                logger.error(f"Paragraph processing failed: {result}")
+                interim_steps.append({
+                    "type": "paragraph_error",
+                    "error": str(result)
+                })
+            else:
+                i, paragraph, (paragraph_violations, paragraph_steps) = result
+                successful_count += 1
+                if paragraph_violations:
+                    all_violations.extend(paragraph_violations)
+                interim_steps.append({
+                    "paragraph_index": i,
+                    "text": paragraph,
+                    "steps": paragraph_steps
+                })
+        
+        # Raise exception if all paragraphs failed
+        if successful_count == 0:
+            raise RuntimeError(f"All {len(paragraphs)} paragraph(s) failed to process")
         
         final_violations = deduplicate_violations(all_violations)
         
@@ -449,16 +478,30 @@ class StyleAuditor:
         vertex_reranker: Optional[Any] = None
     ) -> List[Dict]:
         """Collect more rules based on agent queries."""
+        # Process queries concurrently with semaphore
+        semaphore = asyncio.Semaphore(config.max_concurrent_requests)
+        
+        async def retrieve_with_limit(q: str):
+            async with semaphore:
+                return await self._retrieve_advanced_with_details(
+                    q, 
+                    config,
+                    retriever=retriever,
+                    llm_reranker=llm_reranker,
+                    vertex_reranker=vertex_reranker
+                )
+        
+        tasks = [retrieve_with_limit(q) for q in queries]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
         all_results = []
-        for q in queries:
-            results, _ = await self._retrieve_advanced_with_details(
-                q, 
-                config,
-                retriever=retriever,
-                llm_reranker=llm_reranker,
-                vertex_reranker=vertex_reranker
-            )
-            all_results.extend(results)
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error(f"Query retrieval failed: {result}")
+            else:
+                query_results, _ = result
+                all_results.extend(query_results)
+        
         return all_results
 
     def _nodes_to_dicts(self, nodes: List[NodeWithScore], source_type="retrieved") -> List[Dict]:
