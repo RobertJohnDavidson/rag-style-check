@@ -30,6 +30,8 @@ export interface TuningParameters {
 	max_agent_iterations: number;
 	confidence_threshold: number;
 	include_thinking: boolean;
+	use_query_fusion: boolean;
+	use_llm_rerank: boolean;
 }
 
 export interface ModelInfo {

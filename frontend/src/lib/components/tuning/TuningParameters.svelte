@@ -165,6 +165,23 @@
 					{disabled}
 				/>
 			</div>
+
+			<div class="grid grid-cols-2 gap-4 pt-2">
+				<!-- Query Fusion -->
+				<div
+					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+				>
+					<Label.Root class="text-xs font-medium">Query Fusion</Label.Root>
+					<Switch.Root bind:checked={parameters.use_query_fusion} {disabled} />
+				</div>
+				<!-- LLM Rerank -->
+				<div
+					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+				>
+					<Label.Root class="text-xs font-medium">LLM Rerank</Label.Root>
+					<Switch.Root bind:checked={parameters.use_llm_rerank} {disabled} />
+				</div>
+			</div>
 		</div>
 
 		<div class="h-px bg-border my-2"></div>
@@ -212,7 +229,6 @@
 					{disabled}
 				/>
 			</div>
-
 		</div>
 	</div>
 </div>

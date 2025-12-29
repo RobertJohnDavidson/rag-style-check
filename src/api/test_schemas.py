@@ -87,6 +87,14 @@ class TuningParameters(BaseModel):
         default=False,
         description="Include LLM thinking process in the output"
     )
+    use_query_fusion: bool = Field(
+        default=True,
+        description="Enable query fusion for better retrieval"
+    )
+    use_llm_rerank: bool = Field(
+        default=False,
+        description="Enable LLM-based reranking (slower but more accurate)"
+    )
 
 
 class TestUpdateInput(BaseModel):

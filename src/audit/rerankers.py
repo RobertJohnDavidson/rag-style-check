@@ -198,4 +198,12 @@ class CompositeRerankerModule(BaseRerankerModule):
                  logger.warning(f"Vertex Rerank failed: {e}")
                  details["vertex_rerank_error"] = str(e)
         
-        return nodes_to_dicts(nodes, source_type="reranked"), details
+        # Filter by score threshold
+        filtered_nodes = [
+            n for n in nodes 
+            if (n.score or 0.0) >= self.config.rerank_score_threshold
+        ]
+        
+        details["final_count"] = len(filtered_nodes)
+        
+        return nodes_to_dicts(filtered_nodes, source_type="reranked"), details
