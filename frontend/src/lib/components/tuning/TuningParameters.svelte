@@ -210,25 +210,6 @@
 					{disabled}
 				/>
 			</div>
-
-			<!-- Confidence Threshold -->
-			<div class="space-y-3">
-				<div class="flex items-center justify-between">
-					<span class="text-sm font-medium">Confidence Threshold</span>
-					<span class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded"
-						>{parameters.confidence_threshold.toFixed(2)}</span
-					>
-				</div>
-				<Slider.Root
-					type="multiple"
-					value={[parameters.confidence_threshold]}
-					onValueChange={(v: number[]) => handleSliderChange('confidence_threshold', v)}
-					min={0}
-					max={1}
-					step={0.05}
-					{disabled}
-				/>
-			</div>
 		</div>
 	</div>
 </div>

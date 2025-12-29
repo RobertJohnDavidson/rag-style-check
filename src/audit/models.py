@@ -26,7 +26,6 @@ class AuditorConfig(BaseModel):
     rerank_score_threshold: float = settings.DEFAULT_RERANK_SCORE_THRESHOLD
     aggregated_rule_limit: int = settings.DEFAULT_AGGREGATED_RULE_LIMIT
     max_agent_iterations: int = settings.DEFAULT_MAX_AGENT_ITERATIONS
-    confidence_threshold: float = settings.DEFAULT_CONFIDENCE_THRESHOLD
     max_concurrent_requests: int = settings.DEFAULT_MAX_CONCURRENT_REQUESTS
     use_query_fusion: bool = True
     use_llm_rerank: bool = False

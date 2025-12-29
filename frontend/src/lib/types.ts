@@ -28,7 +28,7 @@ export interface TuningParameters {
 	rerank_score_threshold: number;
 	aggregated_rule_limit: number;
 	max_agent_iterations: number;
-	confidence_threshold: number;
+
 	include_thinking: boolean;
 	use_query_fusion: boolean;
 	use_llm_rerank: boolean;

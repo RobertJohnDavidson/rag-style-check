@@ -77,12 +77,7 @@ class TuningParameters(BaseModel):
         le=10,
         description="Maximum agent thinking cycles"
     )
-    confidence_threshold: float = Field(
-        default=settings.DEFAULT_CONFIDENCE_THRESHOLD,
-        ge=0.0,
-        le=100.0,
-        description="Minimum confidence score for violations"
-    )
+
     include_thinking: bool = Field(
         default=False,
         description="Include LLM thinking process in the output"

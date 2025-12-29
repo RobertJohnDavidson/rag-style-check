@@ -50,7 +50,7 @@ class AppSettings(BaseModel):
     DEFAULT_RERANK_SCORE_THRESHOLD: float = 0.10
     DEFAULT_AGGREGATED_RULE_LIMIT: int = 40
     DEFAULT_MAX_AGENT_ITERATIONS: int = 1
-    DEFAULT_CONFIDENCE_THRESHOLD: float = 10.0
+
     DEFAULT_LLM_TEMPERATURE: float = 0.0
     DEFAULT_MAX_CONCURRENT_REQUESTS: int = 5
     def validate_env(self):
