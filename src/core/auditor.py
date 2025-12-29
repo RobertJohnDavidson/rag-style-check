@@ -55,7 +55,7 @@ class AuditResult(BaseModel):
 class AuditorConfig(BaseModel):
     """Configuration for StyleAuditor."""
     model_name: str = settings.DEFAULT_MODEL
-    temperature: float = 0.1
+    temperature: float = 0.0
     initial_retrieval_count: int = settings.DEFAULT_INITIAL_RETRIEVAL_COUNT
     final_top_k: int = settings.DEFAULT_FINAL_TOP_K
     rerank_score_threshold: float = settings.DEFAULT_RERANK_SCORE_THRESHOLD
@@ -65,7 +65,7 @@ class AuditorConfig(BaseModel):
     max_concurrent_requests: int = settings.DEFAULT_MAX_CONCURRENT_REQUESTS
     use_query_fusion: bool = True
     use_llm_rerank: bool = False
-    include_thinking: bool = True
+    include_thinking: bool = False
 
 class StyleAuditor:
     """
@@ -100,7 +100,8 @@ class StyleAuditor:
                 "location": settings.LLM_REGION
             }
         )
-        
+        #Set this here so the generate text api has access to it
+        LlamaSettings.llm = self.rerank_llm  # For any internal use in LlamaIndex
         logger.info(f"🔧 Auditor initialized with Base Model: {self.config.model_name}")
         logger.info(f"🔧 Rerank Model: {settings.RERANK_MODEL}")
 
@@ -218,6 +219,7 @@ class StyleAuditor:
         
         async def process_paragraph_with_limit(i: int, paragraph: str):
             async with semaphore:
+                print(f"Processing paragraph {i+1}/{len(paragraphs)}")
                 return i, paragraph, await self._audit_paragraph_agentic(
                     paragraph, 
                     run_config,
@@ -402,12 +404,13 @@ class StyleAuditor:
         details = {}
         # 0. Classify Tags (Optional Optimization)
         tags = await self._classify_text_async(text)
-        details["tags"] = tags
+        normalized_tags = self._normalize_tags(tags)
+        details["tags"] = normalized_tags
         
-        tags_str = ", ".join(tags)
+        tags_str = ", ".join(normalized_tags)
         
         query_text = text
-        if tags:
+        if normalized_tags:
             logger.info(f"🏷️ Tags: {tags_str}")
             query_text = f"Tags: {tags_str}. Content: {text}"
         
@@ -468,6 +471,18 @@ class StyleAuditor:
             return found
         except Exception:
             return []
+
+    def _normalize_tags(self, tags: List[str]) -> List[str]:
+        """Keep only tag titles when constructing query hints."""
+        normalized = []
+        for tag in tags:
+            if not tag:
+                continue
+            cleaned = tag.replace("*", "").strip()
+            base = cleaned.split(":")[0].strip()
+            if base:
+                normalized.append(base)
+        return normalized
 
     async def _collect_additional_contexts(
         self, 
