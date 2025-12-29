@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.db import get_async_session
+from src.data.db import get_async_session
 from src.core.models.tests import TestCase
 from src.core.models.tests import TestResult
 

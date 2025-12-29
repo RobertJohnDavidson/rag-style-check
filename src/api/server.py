@@ -26,12 +26,12 @@ logging.basicConfig(level=logging.INFO)
 
 # Import Core Components
 from src.config import settings, init_settings
-from src.core.db import get_async_engine, get_sync_engine, init_vector_store, get_async_session
+from src.data.db import get_async_engine, get_sync_engine, init_vector_store, get_async_session
 from src.core.models.log import AuditLog
-from src.core.auditor import StyleAuditor
-from src.core.test_manager import TestManager
-from src.core import test_generator
-from src.core.prompts import PROMPT_GENERATE_NEWS_TEXT
+from src.core.auditor.auditor import StyleAuditor
+from src.evaluation.test_manager import TestManager
+from src.evaluation import test_generator
+from src.audit.prompts import PROMPT_GENERATE_NEWS_TEXT
 from src.api.schemas import (
     AuditRequest,
     AuditResponse,

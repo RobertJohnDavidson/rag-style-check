@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from sqlalchemy import text
 
 from src.config import settings, init_settings
-from src.core.db import get_sync_engine, setup_tsvector_column
+from src.data.db import get_sync_engine, setup_tsvector_column
 
 load_dotenv()
 init_settings()

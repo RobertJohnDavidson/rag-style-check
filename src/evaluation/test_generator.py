@@ -14,7 +14,7 @@ from llama_index.core import Settings, QueryBundle
 from llama_index.core.retrievers import BaseRetriever
 
 # Import reranker
-from src.core.reranker import VertexAIRerank
+from src.rag.reranker import VertexAIRerank
 
 
 def fetch_cbc_article_text(url: str) -> List[str]:

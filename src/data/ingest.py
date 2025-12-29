@@ -11,7 +11,7 @@ from llama_index.core.storage.docstore import SimpleDocumentStore
 from llama_index.core.storage.kvstore import SimpleKVStore
 from llama_index.core.schema import TextNode
 from src.config import settings, init_settings
-from src.core.db import (
+from src.data.db import (
     get_sync_engine,
     get_async_engine,
     init_vector_store_for_ingest,

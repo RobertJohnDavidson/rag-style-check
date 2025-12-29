@@ -4,7 +4,7 @@ import os
 # Add project root to path
 sys.path.append(os.getcwd())
 
-from src.core.db import get_sync_engine
+from src.data.db import get_sync_engine
 from src.core.models.base import Base
 # Import all models to ensure they are registered with Base.metadata
 from src.core.models.tests import TestCase, TestResult
