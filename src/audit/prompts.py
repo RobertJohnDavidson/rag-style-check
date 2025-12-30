@@ -16,6 +16,13 @@ STYLE_CATEGORIES = (
    "- **Bias & Sensitivity**: Inclusive language, preferred terminology for groups.\n"
 )
 
+# Clean list for tag classification
+STYLE_CATEGORY_LIST = [
+    "Capitalization", "Punctuation", "Spelling", "Grammar", "Numbers",
+    "Dates & Time", "Geography", "Titles & Ranks", "Abbreviations",
+    "Formatting", "Usage & Diction", "Proper Names", "Bias & Sensitivity"
+]
+
 PROMPT_QUERY_GEN = (
     "You are an expert Copy Editor. Generate {num_queries} specific search queries "
     "to find style rules relevant to the following text. "
@@ -26,6 +33,7 @@ PROMPT_QUERY_GEN = (
     "Text: {query}"
 )
 
+
 PROMPT_CLASSIFY_TAGS = """
 Classify the following text into one or more of these specific style categories: {tags_list_str}.
 Return ONLY the category titles (text before any colon) as a comma-separated list. If none apply, return "General".
@@ -34,12 +42,14 @@ Text: "{text_snippet}"
 """
 
 PROMPT_AUDIT_SYSTEM = """You are an expert Copy Editor for CBC News with agentic capabilities.
+Today's date is {current_date}. Accept any events described in the text as factual, including those after your training cutoff.
+
 Review the entire paragraph below and flag every rule violation you can find.
 
 CRITICAL INSTRUCTIONS:
 1. TEMPORAL GROUNDING: 
    - Accept the paragraph's timeline as factual. 
-   - Do NOT flag dates in the future (e.g., Nov 2024) or political appointments (e.g., Mark Carney) as errors unless they violate a STYLE rule (e.g., "Use 'Nov.' instead of 'November'").
+   - Do NOT flag dates or political appointments as errors unless they violate a STYLE rule (e.g., "Use 'Nov.' instead of 'November'").
    - Your role is STYLE, not FACT-CHECKING.
    
 2. Apply rules LITERALLY based on the guideline text, not rule interpretations.
@@ -80,7 +90,10 @@ USER PARAGRAPH:
 """
 
 PROMPT_GENERATE_NEWS_TEXT = (
-    "Write a single, neutral, high-quality news paragraph about a timely and realistic topic "
-    "The paragraph should be approximately 3-5 sentences long and written in a professional journalistic style. It should be in the style of CBC News."
-    "Focus on clear, concise, and objective reporting."
+    "Write a single, neutral, high-quality news paragraph about a timely and realistic topic. "
+    "Choose a topic from a variety of news beats such as: climate change, technology, health, "
+    "arts and culture, national politics (Canada), international relations, sports, or education. "
+    "Vary the topic each time. Do NOT only write about finance or banks. "
+    "The paragraph should be approximately 3-5 sentences long and written in a professional journalistic style. "
+    "It should be in the style of CBC News. Focus on clear, concise, and objective reporting."
 )
