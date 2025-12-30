@@ -32,6 +32,9 @@ export interface TuningParameters {
 	include_thinking: boolean;
 	use_query_fusion: boolean;
 	use_llm_rerank: boolean;
+	use_vertex_rerank: boolean;
+	sparse_top_k: number;
+	num_fusion_queries: number;
 }
 
 export interface ModelInfo {

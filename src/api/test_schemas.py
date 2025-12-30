@@ -90,6 +90,22 @@ class TuningParameters(BaseModel):
         default=False,
         description="Enable LLM-based reranking (slower but more accurate)"
     )
+    use_vertex_rerank: bool = Field(
+        default=True,
+        description="Enable Vertex AI semantic reranking"
+    )
+    sparse_top_k: int = Field(
+        default=10,
+        ge=1,
+        le=50,
+        description="Number of sparse (BM25) results for hybrid search"
+    )
+    num_fusion_queries: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Number of query variants for query fusion"
+    )
 
 
 class TestUpdateInput(BaseModel):

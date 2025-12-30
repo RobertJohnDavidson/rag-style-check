@@ -128,6 +128,28 @@
 				/>
 			</div>
 
+			<!-- Sparse Top K -->
+			<div class="space-y-3">
+				<div class="flex items-center justify-between">
+					<div class="flex flex-col">
+						<span class="text-sm font-medium">Sparse Top K (Hybrid)</span>
+						<p class="text-[10px] text-muted-foreground">Keyword search influence</p>
+					</div>
+					<span class="text-xs font-mono bg-muted px-1.5 py-0.5 rounded"
+						>{parameters.sparse_top_k}</span
+					>
+				</div>
+				<Slider.Root
+					type="multiple"
+					value={[parameters.sparse_top_k]}
+					onValueChange={(v: number[]) => handleSliderChange('sparse_top_k', v)}
+					min={1}
+					max={50}
+					step={1}
+					{disabled}
+				/>
+			</div>
+
 			<!-- Final Top K -->
 			<div class="space-y-3">
 				<div class="flex items-center justify-between">
@@ -168,17 +190,47 @@
 
 			<div class="grid grid-cols-2 gap-4 pt-2">
 				<!-- Query Fusion -->
+				<div class="flex flex-col gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+					<div class="flex items-center justify-between">
+						<Label.Root class="text-xs font-medium">Query Fusion</Label.Root>
+						<Switch.Root bind:checked={parameters.use_query_fusion} {disabled} />
+					</div>
+					{#if parameters.use_query_fusion}
+						<div class="space-y-1.5">
+							<div class="flex items-center justify-between">
+								<span class="text-[10px] text-muted-foreground font-bold">Variants</span>
+								<span class="text-[10px] font-mono">{parameters.num_fusion_queries}</span>
+							</div>
+							<Slider.Root
+								type="multiple"
+								value={[parameters.num_fusion_queries]}
+								onValueChange={(v: number[]) => handleSliderChange('num_fusion_queries', v)}
+								min={1}
+								max={5}
+								step={1}
+								{disabled}
+							/>
+						</div>
+					{/if}
+				</div>
+				<!-- Vertex Rerank -->
 				<div
 					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
 				>
-					<Label.Root class="text-xs font-medium">Query Fusion</Label.Root>
-					<Switch.Root bind:checked={parameters.use_query_fusion} {disabled} />
+					<div class="flex flex-col">
+						<Label.Root class="text-xs font-medium">Vertex Rerank</Label.Root>
+						<p class="text-[10px] text-muted-foreground font-bold">Semantic</p>
+					</div>
+					<Switch.Root bind:checked={parameters.use_vertex_rerank} {disabled} />
 				</div>
 				<!-- LLM Rerank -->
 				<div
 					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
 				>
-					<Label.Root class="text-xs font-medium">LLM Rerank</Label.Root>
+					<div class="flex flex-col">
+						<Label.Root class="text-xs font-medium">LLM Rerank</Label.Root>
+						<p class="text-[10px] text-muted-foreground font-bold">Deep Audit</p>
+					</div>
 					<Switch.Root bind:checked={parameters.use_llm_rerank} {disabled} />
 				</div>
 			</div>

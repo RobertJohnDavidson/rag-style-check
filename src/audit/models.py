@@ -29,4 +29,7 @@ class AuditorConfig(BaseModel):
     max_concurrent_requests: int = settings.DEFAULT_MAX_CONCURRENT_REQUESTS
     use_query_fusion: bool = True
     use_llm_rerank: bool = False
+    use_vertex_rerank: bool = True
     include_thinking: bool = False
+    sparse_top_k: int = 10
+    num_fusion_queries: int = 3
