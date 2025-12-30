@@ -6,7 +6,7 @@ from llama_index.core.retrievers import BaseRetriever, VectorIndexRetriever, Que
 from llama_index.llms.google_genai import GoogleGenAI
 from src.audit.models import AuditorConfig
 from src.audit.helpers import nodes_to_dicts
-from src.audit.prompts import PROMPT_QUERY_GEN, PROMPT_CLASSIFY_TAGS, STYLE_CATEGORIES
+from src.audit.prompts import PROMPT_QUERY_GEN, PROMPT_CLASSIFY_TAGS, STYLE_CATEGORY_LIST
 from src.config import settings
 
 logger = logging.getLogger(__name__)
@@ -37,7 +37,7 @@ class SimpleRetrieverModule(BaseRetrieverModule):
             index=self.index,
             similarity_top_k=self.config.initial_retrieval_count,
             vector_store_query_mode="hybrid",
-            sparse_top_k=10
+            sparse_top_k=self.config.sparse_top_k
         )
         try:
             nodes = await retriever.aretrieve(query)
@@ -80,7 +80,7 @@ class AdvancedRetrieverModule(BaseRetrieverModule):
             index=self.index,
             similarity_top_k=self.config.initial_retrieval_count,
             vector_store_query_mode="hybrid",
-            sparse_top_k=10
+            sparse_top_k=self.config.sparse_top_k
         )
         
         # 3. Apply Fusion if enabled
@@ -90,7 +90,7 @@ class AdvancedRetrieverModule(BaseRetrieverModule):
                 [base_retriever],
                 llm=self.llm,
                 similarity_top_k=self.config.initial_retrieval_count,
-                num_queries=3,
+                num_queries=self.config.num_fusion_queries,
                 mode="reciprocal_rerank",
                 use_async=True,
                 verbose=True,
@@ -108,7 +108,7 @@ class AdvancedRetrieverModule(BaseRetrieverModule):
 
     async def _classify_text_async(self, text: str) -> List[str]:
         prompt_str = PROMPT_CLASSIFY_TAGS.format(
-            tags_list_str=", ".join(STYLE_CATEGORIES.split("\n")), 
+            tags_list_str=", ".join(STYLE_CATEGORY_LIST), 
             text_snippet=text[:1000]
         )
         try:
