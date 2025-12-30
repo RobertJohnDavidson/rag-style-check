@@ -148,7 +148,8 @@ class StyleAgent:
         
         reflection_block = ""
         if iteration > 0 and existing_violations:
-             reflection_block = f"PREVIOUS FINDINGS: {len(existing_violations)} violations found so far."
+            violation_texts = [v.get('text', '') for v in existing_violations[:5]]
+            reflection_block = f"PREVIOUS FINDINGS ({len(existing_violations)}): Already flagged: {', '.join(violation_texts)}. Do NOT re-flag these."
 
         system_prompt = PROMPT_AUDIT_SYSTEM
         if self.config.include_thinking:
