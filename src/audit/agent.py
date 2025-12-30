@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime
 from typing import List, Dict, Tuple
 from llama_index.llms.google_genai import GoogleGenAI
@@ -40,25 +41,35 @@ class StyleAgent:
             - List of Step Dicts (for logging)
         """
         steps = []
+        overall_start = time.perf_counter()
+        timings = []
         
         # 1. Retrieval
-        logger.info("🔍 Agent: Simple Retrieval...")
+        logger.info("🔍 Agent: Retrieval...")
+        start_r = time.perf_counter()
         retrieved_contexts, retrieval_details = await self.retriever.retrieve(paragraph)
+        duration_r = time.perf_counter() - start_r
+        timings.append(("Retrieval", duration_r))
+        
         steps.append({
             "type": "retrieval",
+            "duration_seconds": duration_r,
             "details": retrieval_details
         })
         
         # 2. Reranking
         logger.info("🔍 Agent: Reranking...")
+        start_rk = time.perf_counter()
         reranked_contexts, rerank_details = await self.reranker.rerank(retrieved_contexts, paragraph)
+        duration_rk = time.perf_counter() - start_rk
+        timings.append(("Reranking", duration_rk))
+        
         steps.append({
             "type": "reranking",
+            "duration_seconds": duration_rk,
             "details": rerank_details
         })
         
-        # Use reranked contexts; fallback to retrieved if empty? 
-        # Usually reranker returns subset.
         current_contexts = reranked_contexts if reranked_contexts else retrieved_contexts
         
         # Deduplicate contexts by ID
@@ -70,6 +81,7 @@ class StyleAgent:
         # 3. Agent Audit Loop
         for iteration in range(self.config.max_agent_iterations):
             logger.info(f"--- Iteration {iteration + 1}/{self.config.max_agent_iterations} ---")
+            start_it = time.perf_counter()
             
             # Build Prompt
             prompt = self._build_prompt(paragraph, contexts, violations, iteration)
@@ -87,6 +99,9 @@ class StyleAgent:
                 })
                 break
             
+            duration_it = time.perf_counter() - start_it
+            timings.append((f"Iteration {iteration + 1}", duration_it))
+            
             if not response_obj:
                 break
                 
@@ -94,6 +109,7 @@ class StyleAgent:
             steps.append({
                 "type": "iteration",
                 "iteration": iteration,
+                "duration_seconds": duration_it,
                 "prompt": prompt,
                 "response": response_obj.model_dump()
             })
@@ -104,16 +120,17 @@ class StyleAgent:
             if formatted:
                 violations.extend(formatted)
                 
-            # Stop Conditions
-            if response_obj.confident and not response_obj.needs_more_context:
-                break
-                
-            # Additional Context
-            if response_obj.additional_queries:
+            # Additional Context (only if we have more iterations to use it)
+            if response_obj.additional_queries and (iteration + 1 < self.config.max_agent_iterations):
                  logger.info(f"🔍 Requesting more context: {response_obj.additional_queries}")
+                 start_add = time.perf_counter()
                  new_ctx = await self._fetch_additional_context(response_obj.additional_queries)
+                 duration_add = time.perf_counter() - start_add
+                 timings.append((f"AddContext It{iteration+1}", duration_add))
+                 
                  steps.append({
                      "type": "additional_retrieval",
+                     "duration_seconds": duration_add,
                      "queries": response_obj.additional_queries,
                      "results": new_ctx
                  })
@@ -121,19 +138,32 @@ class StyleAgent:
                  # Re-deduplicate
                  unique_contexts = {c['id']: c for c in contexts}.values()
                  contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
+            
+            # Stop Conditions
+            if response_obj.confident and not response_obj.needs_more_context:
+                break
 
+        total_duration = time.perf_counter() - overall_start
+        self._print_timing_table(timings, total_duration)
+        
         return deduplicate_violations(violations), steps
+
+    def _print_timing_table(self, timings, total):
+        print("\n" + "="*40)
+        print(f"{'Audit Step':<25} | {'Duration (s)':>10}")
+        print("-" * 40)
+        for step, duration in timings:
+            print(f"{step:<25} | {duration:>10.3f}")
+        print("-" * 40)
+        print(f"{'Total Time':<25} | {total:>10.3f}")
+        print("="*40 + "\n")
 
     async def _fetch_additional_context(self, queries: List[str]) -> List[Dict]:
         """Fetch more rules for specific queries."""
         all_results = []
         for q in queries:
-             # Just use base retrieval for speed on additional queries, 
-             # or reuse the full pipeline? 
-             # Let's reuse the full pipeline for consistency.
+             # Just use base retrieval for speed on additional queries
              r_ctx, _ = await self.retriever.retrieve(q)
-             # Optional: Rerank these too? Maybe overkill for specific queries.
-             # Let's skip rerank for additional specific queries to trust the vector store match.
              all_results.extend(r_ctx)
         return all_results
 
@@ -150,7 +180,7 @@ class StyleAgent:
         if iteration > 0 and existing_violations:
             violation_texts = [v.get('text', '') for v in existing_violations[:5]]
             reflection_block = f"PREVIOUS FINDINGS ({len(existing_violations)}): Already flagged: {', '.join(violation_texts)}. Do NOT re-flag these."
-
+        
         system_prompt = PROMPT_AUDIT_SYSTEM
         if self.config.include_thinking:
             system_prompt += "\nExplain your thinking process clearly in the 'thinking' field before listing violations."

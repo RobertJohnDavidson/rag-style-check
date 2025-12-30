@@ -33,6 +33,41 @@ PROMPT_QUERY_GEN = (
     "Text: {query}"
 )
 
+PROMPT_IDENTIFY_TERMS = (
+    "You are an expert Copy Editor. Analyze the following text and identify up to {max_terms} specific terms, phrases, or stylistic elements "
+    "that could potentially violate style guide rules in these categories:\n"
+    f"{STYLE_CATEGORIES}\n"
+    "Identify terms that are specific (avoid generic phrases like 'style guide'). "
+    "Return ONLY a JSON array of strings, each being a term or short phrase to check. "
+    "Return ONLY the JSON. No preamble or markdown formatting like ```json. "
+    "Example: [\"oilsands\", \"Alberta Government\", \"$5 million\", \"Jan. 15\"]\n\n"
+    "Text: \"{text}\""
+)
+
+PROMPT_GENERATE_TERM_QUERIES = (
+    "Analyze the term \"{term}\" extracted from this context: \"{context}\"\n\n"
+    "Generate {num_queries} specific search queries to find style guide rules that might apply to this term. "
+    "Incorporate relevant style category keywords if applicable (e.g., 'capitalization', 'spelling', 'formatting').\n\n"
+    "Return one query per line. Be specific. Do NOT include generic phrases like \"style guide\"."
+)
+
+# Consolidated prompt: Identifies terms AND generates queries in one call
+PROMPT_IDENTIFY_AND_GENERATE_QUERIES = (
+    "You are an expert Copy Editor. Analyze the following text and:\n"
+    "1. Identify up to {max_terms} specific terms that could potentially violate style guide rules.\n"
+    "2. For EACH term, generate {num_queries} specific search queries to find relevant rules.\n\n"
+    "Focus on these style categories:\n"
+    f"{STYLE_CATEGORIES}\n"
+    "Return ONLY a JSON object with this structure (no markdown, no preamble):\n"
+    "{{\n"
+    '  "terms": [\n'
+    '    {{"term": "example term", "queries": ["query 1", "query 2"]}},\n'
+    '    ...\n'
+    '  ]\n'
+    "}}\n\n"
+    "Text: \"{text}\""
+)
+
 
 PROMPT_CLASSIFY_TAGS = """
 Classify the following text into one or more of these specific style categories: {tags_list_str}.

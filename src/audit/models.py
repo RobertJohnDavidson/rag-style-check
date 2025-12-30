@@ -33,3 +33,4 @@ class AuditorConfig(BaseModel):
     include_thinking: bool = False
     sparse_top_k: int = 10
     num_fusion_queries: int = 3
+    max_violation_terms: int = 5

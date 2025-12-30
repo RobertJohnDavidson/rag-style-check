@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional, Any, Tuple
 import logging
+import time
 from llama_index.core import QueryBundle
 from llama_index.core.postprocessor import LLMRerank
 from llama_index.core.schema import NodeWithScore, TextNode
@@ -170,8 +171,10 @@ class CompositeRerankerModule(BaseRerankerModule):
                     top_n=self.config.final_top_k,
                     llm=self.llm
                 )
+                start_llm = time.perf_counter()
                 # LLMRerank supports async postprocess
                 results = await reranker.apostprocess_nodes(nodes, query_bundle=query_bundle)
+                details["llm_rerank_duration"] = time.perf_counter() - start_llm
                 nodes = results[:self.config.final_top_k]
                 details["llm_reranked_count"] = len(nodes)
             except Exception as e:
@@ -189,7 +192,9 @@ class CompositeRerankerModule(BaseRerankerModule):
                 )
                 # Vertex AI rerank might be sync in the custom class, check usage
                 # Original code used .postprocess_nodes (sync)
+                start_vertex = time.perf_counter()
                 results = vertex_reranker.postprocess_nodes(nodes, query_bundle=query_bundle)
+                details["vertex_rerank_duration"] = time.perf_counter() - start_vertex
                 nodes = results[:self.config.final_top_k]
                 details["vertex_reranked_count"] = len(nodes)
              except Exception as e:
