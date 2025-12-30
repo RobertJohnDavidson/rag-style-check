@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from typing import List, Optional, Any, Dict
 from llama_index.core import VectorStoreIndex, Settings as LlamaSettings
 from llama_index.core.retrievers import BaseRetriever
@@ -75,6 +76,7 @@ class StyleAuditor:
         all_violations = []
         interim_steps = []
         
+        session_start = time.perf_counter()
         logger.info(f"🔍 Auditing {len(paragraphs)} paragraph(s)...")
         semaphore = asyncio.Semaphore(run_config.max_concurrent_requests)
         
@@ -106,17 +108,31 @@ class StyleAuditor:
                     "steps": p_steps
                 })
 
+        session_duration = time.perf_counter() - session_start
+        
+        if successful_count > 0:
+            self._print_session_summary(successful_count, len(paragraphs), session_duration)
+
         if successful_count == 0:
             logger.error("All paragraphs failed.")
-            # We can choose to raise or return empty with error logs
-            # raise RuntimeError("All paragraphs failed")
 
         final_violations = deduplicate_violations(all_violations)
         
         # 5. Logging Payload
         log_data = self._build_log_data(run_config, interim_steps, final_violations)
+        log_data["overall_duration_seconds"] = session_duration
         
         return final_violations, log_data
+
+    def _print_session_summary(self, successful, total, duration):
+        print("\n" + "#" * 40)
+        print("         AUDIT SESSION SUMMARY")
+        print("#" * 40)
+        print(f"Paragraphs Processed : {successful}/{total}")
+        print(f"Total Session Time   : {duration:>10.3f}s")
+        if successful > 0:
+            print(f"Average Per Para     : {duration/successful:>10.3f}s")
+        print("#" * 40 + "\n")
 
     def _create_llm(self, config: AuditorConfig) -> GoogleGenAI:
         """Create a configured LLM instance."""

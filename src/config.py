@@ -52,7 +52,7 @@ class AppSettings(BaseModel):
     DEFAULT_MAX_AGENT_ITERATIONS: int = 1
 
     DEFAULT_LLM_TEMPERATURE: float = 0.0
-    DEFAULT_MAX_CONCURRENT_REQUESTS: int = 5
+    DEFAULT_MAX_CONCURRENT_REQUESTS: int = 15
     def validate_env(self):
         if not self.PROJECT_ID:
             raise ValueError("PROJECT_NAME not found in environment variables.")
