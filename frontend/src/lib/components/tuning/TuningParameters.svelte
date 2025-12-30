@@ -211,6 +211,21 @@
 								{disabled}
 							/>
 						</div>
+						<div class="space-y-1.5 pt-1">
+							<div class="flex items-center justify-between">
+								<span class="text-[10px] text-muted-foreground font-bold">Max Terms</span>
+								<span class="text-[10px] font-mono">{parameters.max_violation_terms}</span>
+							</div>
+							<Slider.Root
+								type="multiple"
+								value={[parameters.max_violation_terms]}
+								onValueChange={(v: number[]) => handleSliderChange('max_violation_terms', v)}
+								min={1}
+								max={10}
+								step={1}
+								{disabled}
+							/>
+						</div>
 					{/if}
 				</div>
 				<!-- Vertex Rerank -->

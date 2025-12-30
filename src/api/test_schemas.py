@@ -106,6 +106,12 @@ class TuningParameters(BaseModel):
         le=10,
         description="Number of query variants for query fusion"
     )
+    max_violation_terms: int = Field(
+        default=5,
+        ge=1,
+        le=10,
+        description="Maximum potential violation terms to identify per paragraph"
+    )
 
 
 class TestUpdateInput(BaseModel):

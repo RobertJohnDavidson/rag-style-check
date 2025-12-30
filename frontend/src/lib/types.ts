@@ -35,6 +35,7 @@ export interface TuningParameters {
 	use_vertex_rerank: boolean;
 	sparse_top_k: number;
 	num_fusion_queries: number;
+	max_violation_terms: number;
 }
 
 export interface ModelInfo {
