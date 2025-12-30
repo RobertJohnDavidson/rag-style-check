@@ -178,10 +178,8 @@ class CompositeRerankerModule(BaseRerankerModule):
                 logger.warning(f"LLM Rerank failed: {e}")
                 details["llm_rerank_error"] = str(e)
 
-        # 2. Vertex Rerank (Only if LLM didn't already run? Or chained? 
-        # Auditor original logic: "if vertex_reranker and nodes and not config.use_llm_rerank"
-        # We will follow exactly that logic for safety.
-        elif VertexAIRerank and not self.config.use_llm_rerank:
+        # 2. Vertex Rerank (Only if LLM didn't already run)
+        elif self.config.use_vertex_rerank and not self.config.use_llm_rerank:
              try:
                 vertex_reranker = VertexAIRerank(
                     project_id=settings.PROJECT_ID,
