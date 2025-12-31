@@ -73,6 +73,7 @@ export interface TestResult {
 	tuning_parameters: TuningParameters;
 	execution_time_seconds: number;
 	executed_at: string;
+	profile_id?: string;
 }
 
 export interface PaginatedResponse<T> {

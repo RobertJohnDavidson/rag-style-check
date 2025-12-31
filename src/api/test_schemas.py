@@ -193,6 +193,7 @@ class TestRunResult(BaseModel):
     detected_violations: List[DetectedViolation]
     tuning_parameters: Dict[str, Any]
     execution_time_seconds: float
+    profile_id: Optional[str] = None
 
 
 class TestListResponse(BaseModel):

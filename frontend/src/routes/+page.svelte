@@ -205,6 +205,9 @@
 			</div>
 
 			<div class="flex items-center gap-4">
+				<Button.Root variant="ghost" size="sm" class="gap-2 font-bold text-primary" href="/tests">
+					<BarChart3 class="h-4 w-4" /> Benchmarking
+				</Button.Root>
 				<Button.Root
 					variant="ghost"
 					size="icon"
@@ -221,185 +224,115 @@
 	</header>
 
 	<main class="container max-w-4xl py-6 space-y-10 mx-auto">
-		<Tabs.Root value="audit" class="w-full">
-			<Tabs.List class="grid w-full grid-cols-2 mb-8 h-12">
-				<Tabs.Trigger value="audit" class="text-sm font-bold uppercase tracking-widest gap-2">
-					<Wand2 class="h-4 w-4" /> Audit Style
-				</Tabs.Trigger>
-				<Tabs.Trigger value="tests" class="text-sm font-bold uppercase tracking-widest gap-2">
-					<Play class="h-4 w-4" /> Bulk Test Runner
-				</Tabs.Trigger>
-			</Tabs.List>
+		<div class="space-y-6 animate-in fade-in duration-300">
+			<div class="space-y-1">
+				<h2 class="text-3xl font-bold tracking-tight">Style Audit</h2>
+				<p class="text-muted-foreground">
+					Enter text to check for CBC News style guide violations.
+				</p>
+			</div>
 
-			<Tabs.Content value="audit" class="space-y-6 animate-in fade-in duration-300">
-				<div class="space-y-1">
-					<h2 class="text-3xl font-bold tracking-tight">Style Audit</h2>
-					<p class="text-muted-foreground">
-						Enter text to check for CBC News style guide violations.
-					</p>
-				</div>
+			<Card.Root>
+				<Card.Content class="py-4 space-y-6">
+					<div class="flex justify-end pr-1">
+						<Button.Root
+							variant="outline"
+							size="sm"
+							onclick={handleGenerateText}
+							disabled={generating}
+							class="gap-2"
+						>
+							{#if generating}
+								<LoaderCircle class="h-4 w-4 animate-spin" /> Generating...
+							{:else}
+								<Sparkles class="h-4 w-4 text-primary" /> Generate Text
+							{/if}
+						</Button.Root>
+					</div>
 
-				<Card.Root>
-					<Card.Content class="py-4 space-y-6">
-						<div class="flex justify-end pr-1">
-							<Button.Root
-								variant="outline"
-								size="sm"
-								onclick={handleGenerateText}
-								disabled={generating}
-								class="gap-2"
-							>
-								{#if generating}
-									<LoaderCircle class="h-4 w-4 animate-spin" /> Generating...
-								{:else}
-									<Sparkles class="h-4 w-4 text-primary" /> Generate Text
+					<div class="space-y-4">
+						<div class="flex justify-between items-center px-1">
+							<div class="flex gap-2">
+								{#if selectedTest}
+									<Badge.Root variant="secondary" class="font-semibold">
+										Linked: {selectedTest.label}
+									</Badge.Root>
 								{/if}
-							</Button.Root>
+							</div>
 						</div>
 
+						<Textarea.Root
+							bind:value={text}
+							placeholder="Paste text here to audit..."
+							class="min-h-[250px] text-lg resize-none focus-visible:ring-1"
+						/>
+
+						<Button.Root
+							variant="default"
+							class="w-full h-12 text-lg font-bold transition-all hover:scale-[1.01] active:scale-[0.99]"
+							disabled={loading || !text.trim()}
+							onclick={handleAudit}
+						>
+							{#if loading}
+								<LoaderCircle class="mr-2 h-5 w-5 animate-spin" /> Auditing Style...
+							{:else}
+								Start Style Audit
+							{/if}
+						</Button.Root>
+					</div>
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Results Section -->
+			{#if !loading && (processingTime > 0 || violations.length > 0 || testResult || error || success)}
+				<section class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+					{#if error && !runningBulk}
+						<div
+							class="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium border border-destructive/20"
+						>
+							<CircleAlert class="h-4 w-4" />
+							{error}
+						</div>
+					{/if}
+					{#if success}
+						<div
+							class="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium border border-green-500/20"
+						>
+							<CircleCheckBig class="h-4 w-4" />
+							{success}
+						</div>
+					{/if}
+
+					{#if testResult}
 						<div class="space-y-4">
-							<div class="flex justify-between items-center px-1">
-								<div class="flex gap-2">
-									{#if selectedTest}
-										<Badge.Root variant="secondary" class="font-semibold">
-											Linked: {selectedTest.label}
-										</Badge.Root>
-									{/if}
-								</div>
+							<div class="flex items-center gap-4">
+								<div class="h-px flex-1 bg-border"></div>
+								<h3 class="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+									Performance Metrics
+								</h3>
+								<div class="h-px flex-1 bg-border"></div>
 							</div>
-
-							<Textarea.Root
-								bind:value={text}
-								placeholder="Paste text here to audit..."
-								class="min-h-[250px] text-lg resize-none focus-visible:ring-1"
+							<TestRunCompare
+								metrics={testResult.metrics}
+								expectedCount={selectedTest?.expected_violations.length || 0}
+								detectedCount={violations.length}
 							/>
-
-							<Button.Root
-								variant="default"
-								class="w-full h-12 text-lg font-bold transition-all hover:scale-[1.01] active:scale-[0.99]"
-								disabled={loading || !text.trim()}
-								onclick={handleAudit}
-							>
-								{#if loading}
-									<LoaderCircle class="mr-2 h-5 w-5 animate-spin" /> Auditing Style...
-								{:else}
-									Start Style Audit
-								{/if}
-							</Button.Root>
 						</div>
-					</Card.Content>
-				</Card.Root>
+					{/if}
 
-				<!-- Results Section -->
-				{#if !loading && (processingTime > 0 || violations.length > 0 || testResult || error || success)}
-					<section class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-						{#if error && !runningBulk}
-							<div
-								class="flex items-center gap-2 p-4 rounded-lg bg-destructive/10 text-destructive text-sm font-medium border border-destructive/20"
-							>
-								<CircleAlert class="h-4 w-4" />
-								{error}
-							</div>
-						{/if}
-						{#if success}
-							<div
-								class="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium border border-green-500/20"
-							>
-								<CircleCheckBig class="h-4 w-4" />
-								{success}
-							</div>
-						{/if}
+					{#if processingTime > 0 && violations.length === 0 && !error}
+						<div
+							class="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium border border-green-500/20"
+						>
+							<CircleCheckBig class="h-4 w-4" />
+							No violations found. You can still add custom violations or save as a test case.
+						</div>
+					{/if}
 
-						{#if testResult}
-							<div class="space-y-4">
-								<div class="flex items-center gap-4">
-									<div class="h-px flex-1 bg-border"></div>
-									<h3 class="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-										Performance Metrics
-									</h3>
-									<div class="h-px flex-1 bg-border"></div>
-								</div>
-								<TestRunCompare
-									metrics={testResult.metrics}
-									expectedCount={selectedTest?.expected_violations.length || 0}
-									detectedCount={violations.length}
-								/>
-							</div>
-						{/if}
-
-						{#if processingTime > 0 && violations.length === 0 && !error}
-							<div
-								class="flex items-center gap-2 p-4 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-sm font-medium border border-green-500/20"
-							>
-								<CircleCheckBig class="h-4 w-4" />
-								No violations found. You can still add custom violations or save as a test case.
-							</div>
-						{/if}
-
-						<AuditResultsEditor {violations} onSaveAsTest={handleSaveAsTest} />
-					</section>
-				{/if}
-			</Tabs.Content>
-
-			<Tabs.Content value="tests" class="space-y-6 animate-in fade-in duration-300">
-				<div class="space-y-1">
-					<h2 class="text-3xl font-bold tracking-tight">Bulk Test Runner</h2>
-					<p class="text-muted-foreground">
-						Select multiple test cases to run against the style checker in bulk.
-					</p>
-				</div>
-
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-					<div class="md:col-span-1 space-y-4">
-						<Card.Root>
-							<Card.Content class="pt-6">
-								<TestSelector multiSelect={true} onSelectionChange={handleSelectionChange} />
-								<div class="mt-6">
-									<Button.Root
-										variant="default"
-										class="w-full gap-2 h-11"
-										disabled={selectedTestIds.length === 0 || runningBulk}
-										onclick={handleRunBulkTests}
-									>
-										{#if runningBulk}
-											<LoaderCircle class="h-4 w-4 animate-spin" /> Running...
-										{:else}
-											<Play class="h-4 w-4" /> Run {selectedTestIds.length} Selected
-										{/if}
-									</Button.Root>
-								</div>
-							</Card.Content>
-						</Card.Root>
-					</div>
-
-					<div class="md:col-span-2">
-						{#if bulkResults.length > 0}
-							<section class="animate-in fade-in slide-in-from-right-4 duration-500">
-								<BulkResults results={bulkResults} />
-							</section>
-						{:else if runningBulk}
-							<div
-								class="flex flex-col items-center justify-center h-64 border border-dashed rounded-lg bg-muted/30 text-center px-8"
-							>
-								<LoaderCircle class="h-8 w-8 animate-spin text-primary mb-4" />
-								<p class="text-muted-foreground font-medium">
-									Executing {selectedTestIds.length} tests...
-								</p>
-							</div>
-						{:else}
-							<div
-								class="flex flex-col items-center justify-center h-64 border border-dashed rounded-lg bg-muted/30 text-center px-8"
-							>
-								<BarChart3 class="h-10 w-10 text-muted-foreground mb-4 opacity-20" />
-								<p class="text-muted-foreground">
-									Select tests from the left and click run to see results.
-								</p>
-							</div>
-						{/if}
-					</div>
-				</div>
-			</Tabs.Content>
-		</Tabs.Root>
+					<AuditResultsEditor {violations} onSaveAsTest={handleSaveAsTest} />
+				</section>
+			{/if}
+		</div>
 	</main>
 
 	<TuningDrawer bind:isOpen={showTuning} bind:parameters={tuningParams} {models} />

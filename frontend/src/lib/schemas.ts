@@ -27,8 +27,14 @@ export const TuningParametersSchema = z.object({
 	rerank_score_threshold: z.number().min(0).max(1),
 	aggregated_rule_limit: z.number().int().min(10).max(100),
 	max_agent_iterations: z.number().int().min(1).max(10),
-	confidence_threshold: z.number().min(0),
-	include_thinking: z.boolean().default(false)
+
+	include_thinking: z.boolean().default(false),
+	use_query_fusion: z.boolean().default(true),
+	use_llm_rerank: z.boolean().default(false),
+	use_vertex_rerank: z.boolean().default(true),
+	sparse_top_k: z.number().int().min(1).max(50),
+	num_fusion_queries: z.number().int().min(1).max(10),
+	max_violation_terms: z.number().int().min(1).max(10)
 });
 
 // Validation schema for CBC article URLs

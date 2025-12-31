@@ -162,8 +162,7 @@ class StyleAuditor:
                 "use_query_fusion": config.use_query_fusion,
                 "max_violation_terms": getattr(config, 'max_violation_terms', 5)
             },
-            "retrieval_steps": retrieval_steps,
-            "audit_steps": audit_steps,
+            "interim_steps": retrieval_steps + audit_steps,
             "final_output": violations
         }
 

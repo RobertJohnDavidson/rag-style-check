@@ -143,12 +143,15 @@ export async function deleteTest(id: string): Promise<ApiResponse<void>> {
 }
 
 // Run a test with tuning parameters
-export async function runTest(testId: string, tuningParameters?: TuningParameters): Promise<ApiResponse<TestResult>> {
+export async function runTest(testId: string, tuningParameters?: TuningParameters, profileId?: string): Promise<ApiResponse<TestResult>> {
 	try {
 		// Validate tuning parameters
 		const validated = tuningParameters ? TuningParametersSchema.parse(tuningParameters) : undefined;
 
-		const response = await fetch(`${getApiBase()}/api/tests/${testId}/run`, {
+		const url = new URL(`${getApiBase()}/api/tests/${testId}/run`);
+		if (profileId) url.searchParams.append('profile_id', profileId);
+
+		const response = await fetch(url.toString(), {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(validated || {})

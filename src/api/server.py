@@ -401,16 +401,13 @@ async def delete_test(
 async def run_test(
     test_id: UUID,
     tuning_params: Optional[TuningParameters] = None,
+    profile_id: Optional[str] = None,
     manager: TestManager = Depends(get_test_manager_instance),
     auditor_svc: StyleAuditor = Depends(get_auditor_instance)
 ):
     """
-    Run a test case using the Global Auditor service.
-    Note: Dynamic tuning overrides on the global auditor are tricky concurrently.
-    For this version, we will use the global auditor with its defined settings, 
-    IGNORING tuning_params unless we instantiate a temporary one (expensive).
-    
-    Future TODO: Pass parameters to `check_text`.
+    Run a test case with specific tuning parameters and calculate performance metrics.
+    Saves the execution result to the database for historical tracking.
     """
     try:
         test_dict = await manager.get_test(test_id)
@@ -426,7 +423,7 @@ async def run_test(
             tuning_params=tuning_params
         )
         
-        # Save Log to DB
+        # Save Audit Log to DB
         if log_data:
             try:
                 async with get_async_session() as session:
@@ -441,7 +438,7 @@ async def run_test(
                     )
                     session.add(audit_log)
             except Exception as log_err:
-                print(f"Failed to save audit log during test run: {log_err}")
+                logger.error(f"Failed to save audit log during test run: {log_err}")
         
         execution_time = (datetime.now() - start_time).total_seconds()
         
@@ -451,26 +448,30 @@ async def run_test(
                 text=v.get("text", ""),
                 rule=v.get("rule_name", "Unknown"),
                 reason=v.get("violation", ""),
-                confidence=None,
+                confidence=v.get("confidence"),
                 url=v.get("url")
             )
             for v in detected
         ]
         
-        # Calculate metrics
-        # Simple exact match for now (can be improved)
+        # Calculate metrics (Rule based matching)
         tp = 0
-        fp = 0
-        fn = 0
+        expected_rules = set()
+        for ev in test_record.expected_violations:
+            if ev.get('rule'): expected_rules.add(ev['rule'].lower())
+            if ev.get('link'): expected_rules.add(ev['link'].lower())
+
+        detected_rules_names = set(v.rule.lower() for v in detected_violations if v.rule)
+        detected_rules_urls = set(v.url.lower() for v in detected_violations if v.url)
         
-        expected_rules = set(v['link'] for v in test_record.expected_violations if v.get('link'))
-        detected_rules = set(v.url for v in detected_violations if v.url)
+        for ev in test_record.expected_violations:
+            ev_rule = ev.get('rule', '').lower()
+            ev_link = ev.get('link', '').lower()
+            if (ev_rule and ev_rule in detected_rules_names) or (ev_link and ev_link in detected_rules_urls):
+                tp += 1
         
-        tp = len(expected_rules.intersection(detected_rules))
-        fp = len(detected_rules - expected_rules)
-        fn = len(expected_rules - detected_rules)
-        
-        tn = 0 # Not applicable for this type of test really
+        fp = len([dv for dv in detected_violations if (dv.rule.lower() not in expected_rules) and (not dv.url or dv.url.lower() not in expected_rules)])
+        fn = len(test_record.expected_violations) - tp
         
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
@@ -480,18 +481,36 @@ async def run_test(
             true_positives=tp,
             false_positives=fp,
             false_negatives=fn,
-            true_negatives=tn,
+            true_negatives=0,
             precision=precision,
             recall=recall,
             f1_score=f1
         )
         
+        # Save Test Result to DB
+        try:
+            await manager.save_test_result(
+                test_id=test_id,
+                true_positives=tp,
+                false_positives=fp,
+                false_negatives=fn,
+                true_negatives=0,
+                precision=precision,
+                recall=recall,
+                f1_score=f1,
+                detected_violations=[v.model_dump() for v in detected_violations],
+                tuning_parameters=tuning_params.model_dump() if tuning_params else {}
+            )
+        except Exception as res_err:
+            logger.error(f"Failed to save test result summary: {res_err}")
+
         return TestRunResult(
             test_record=test_record,
             metrics=metrics,
             detected_violations=detected_violations,
             tuning_parameters=tuning_params.model_dump() if tuning_params else {},
-            execution_time_seconds=execution_time
+            execution_time_seconds=execution_time,
+            profile_id=profile_id
         )
     except HTTPException:
         raise
