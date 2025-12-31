@@ -53,8 +53,24 @@ class SimpleRetrieverModule(BaseRetrieverModule):
             details["retrieved_nodes_count"] = len(nodes)
             return nodes_to_dicts(nodes, source_type="simple_retrieval"), details
         except Exception as e:
-            logger.error(f"Simple retrieval failed: {e}")
-            details["error"] = str(e)
+            if "hybrid" in str(e).lower() or "mode" in str(e).lower():
+                logger.warning(f"Hybrid search not supported by vector store, falling back to default: {e}")
+                try:
+                    # Re-instantiate with default mode
+                    fallback_retriever = VectorIndexRetriever(
+                        index=self.index,
+                        similarity_top_k=self.config.initial_retrieval_count,
+                        vector_store_query_mode="default"
+                    )
+                    nodes = await fallback_retriever.aretrieve(query)
+                    details["retrieved_nodes_count"] = len(nodes)
+                    return nodes_to_dicts(nodes, source_type="simple_retrieval_fallback"), details
+                except Exception as fallback_e:
+                    logger.error(f"Fallback retrieval also failed: {fallback_e}")
+                    details["error"] = str(fallback_e)
+            else:
+                logger.error(f"Simple retrieval failed: {e}")
+                details["error"] = str(e)
             return [], details
 
 class AdvancedRetrieverModule(BaseRetrieverModule):
@@ -154,7 +170,21 @@ class AdvancedRetrieverModule(BaseRetrieverModule):
             details["retrieved_nodes_count"] = len(nodes)
             return nodes_to_dicts(nodes, source_type="advanced_retrieval"), details
         except Exception as e:
-            logger.error(f"Advanced retrieval failed: {e}")
+            if "hybrid" in str(e).lower() or "mode" in str(e).lower():
+                logger.warning(f"Hybrid search not supported, falling back to default: {e}")
+                try:
+                    fallback_base = VectorIndexRetriever(
+                        index=self.index,
+                        similarity_top_k=self.config.initial_retrieval_count,
+                        vector_store_query_mode="default"
+                    )
+                    nodes = await fallback_base.aretrieve(final_query)
+                    details["retrieved_nodes_count"] = len(nodes)
+                    return nodes_to_dicts(nodes, source_type="advanced_retrieval_fallback"), details
+                except Exception as fallback_e:
+                    logger.error(f"Fallback retrieval failed: {fallback_e}")
+            else:
+                 logger.error(f"Advanced retrieval failed: {e}")
             details["error"] = str(e)
             return [], details
 

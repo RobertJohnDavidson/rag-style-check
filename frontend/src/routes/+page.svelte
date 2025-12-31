@@ -42,7 +42,7 @@
 	// Tuning State
 	let showTuning = $state(false);
 	let models = $state<ModelInfo[]>([]);
-	let tuningParams = $state<TuningParameters>({});
+	let tuningParams = $state<TuningParameters>({} as any);
 
 	async function handleAudit() {
 		if (!text.trim()) {
@@ -55,6 +55,7 @@
 		success = '';
 		testResult = null;
 		violations = [];
+		processingTime = 0;
 
 		try {
 			// If we have a selected test and the text matches its original text, run as a test case
@@ -200,10 +201,7 @@
 		<div class=" flex h-14 items-center justify-between px-8">
 			<div class="flex items-center gap-2">
 				<Zap class="h-6 w-6 text-primary fill-primary" />
-				<span class="font-bold inline-block"
-					>Style Auditor 
-					</span
-				>
+				<span class="font-bold inline-block">Style Auditor </span>
 			</div>
 
 			<div class="flex items-center gap-4">
@@ -293,7 +291,7 @@
 				</Card.Root>
 
 				<!-- Results Section -->
-				{#if processingTime > 0 || violations.length > 0 || testResult || error || success}
+				{#if !loading && (processingTime > 0 || violations.length > 0 || testResult || error || success)}
 					<section class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 						{#if error && !runningBulk}
 							<div

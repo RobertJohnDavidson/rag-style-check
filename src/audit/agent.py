@@ -16,17 +16,16 @@ logger = logging.getLogger(__name__)
 
 class StyleAgent:
     """
-    Performs the audit on a single paragraph.
-    Follows strictly the linear flow:
-    Retrieve -> Rerank -> Audit Loop (with optional re-retrieval)
+    Performs the style audit. 
+    Supports both per-paragraph auditing and full-article auditing with pre-fetched rules.
     """
     
     def __init__(
         self, 
         config: AuditorConfig, 
         llm: GoogleGenAI,
-        retriever: BaseRetrieverModule,
-        reranker: BaseRerankerModule
+        retriever: BaseRetrieverModule = None,
+        reranker: BaseRerankerModule = None
     ):
         self.config = config
         self.llm = llm
@@ -35,11 +34,12 @@ class StyleAgent:
 
     async def audit_paragraph(self, paragraph: str) -> Tuple[List[Dict], List[Dict]]:
         """
-        Execute the audit process for one paragraph.
-        Returns:
-            - List of Violated Dicts
-            - List of Step Dicts (for logging)
+        [DEPRECATED/LEGACY] Original monolithic flow: Retrieve -> Rerank -> Audit Loop.
+        Maintained for backward compatibility or simple single-shot audits.
         """
+        if not self.retriever or not self.reranker:
+             raise ValueError("Retriever and Reranker are required for audit_paragraph.")
+             
         steps = []
         overall_start = time.perf_counter()
         timings = []
@@ -72,19 +72,47 @@ class StyleAgent:
         
         current_contexts = reranked_contexts if reranked_contexts else retrieved_contexts
         
-        # Deduplicate contexts by ID
-        unique_contexts = {c['id']: c for c in current_contexts}.values()
-        contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
+        # 3. Audit Loop
+        violations, loop_steps, loop_timings = await self._run_audit_loop(paragraph, current_contexts)
         
+        steps.extend(loop_steps)
+        timings.extend(loop_timings)
+        
+        total_duration = time.perf_counter() - overall_start
+        self._print_timing_table(timings, total_duration)
+        
+        return deduplicate_violations(violations), steps
+
+    async def audit_full_article(self, text: str, rules: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Tuple[str, float]]]:
+        """
+        Executes the audit phase against the full article text using pre-fetched rules.
+        Does NOT perform retrieval.
+        Returns (violations, steps, timings)
+        """
+        logger.info("🔍 Agent: Starting Full-Article Audit Loop...")
+        violations, steps, timings = await self._run_audit_loop(text, rules)
+        
+        # We no longer print the internal table here to allow StyleAuditor to manage consolidated output
+        return deduplicate_violations(violations), steps, timings
+
+    async def _run_audit_loop(self, text: str, contexts: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Tuple[str, float]]]:
+        """
+        Shared internal audit loop for both paragraph and full-article auditing.
+        """
+        steps = []
+        timings = []
         violations = []
         
-        # 3. Agent Audit Loop
+        # Deduplicate contexts by ID and limit
+        unique_contexts = {c['id']: c for c in contexts}.values()
+        current_contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
+        
         for iteration in range(self.config.max_agent_iterations):
             logger.info(f"--- Iteration {iteration + 1}/{self.config.max_agent_iterations} ---")
             start_it = time.perf_counter()
             
             # Build Prompt
-            prompt = self._build_prompt(paragraph, contexts, violations, iteration)
+            prompt = self._build_prompt(text, current_contexts, violations, iteration)
             
             # Predict
             try:
@@ -116,13 +144,13 @@ class StyleAgent:
             
             # Collect Violations
             new_violations = response_obj.violations
-            formatted = format_violations(new_violations, paragraph, contexts)
+            formatted = format_violations(new_violations, text, current_contexts)
             if formatted:
                 violations.extend(formatted)
                 
             # Additional Context (only if we have more iterations to use it)
-            if response_obj.additional_queries and (iteration + 1 < self.config.max_agent_iterations):
-                 logger.info(f"🔍 Requesting more context: {response_obj.additional_queries}")
+            if response_obj.additional_queries and (iteration + 1 < self.config.max_agent_iterations) and self.retriever:
+                 logger.info(f"🔍 Requesting more context (agentic): {response_obj.additional_queries}")
                  start_add = time.perf_counter()
                  new_ctx = await self._fetch_additional_context(response_obj.additional_queries)
                  duration_add = time.perf_counter() - start_add
@@ -134,19 +162,16 @@ class StyleAgent:
                      "queries": response_obj.additional_queries,
                      "results": new_ctx
                  })
-                 contexts.extend(new_ctx)
+                 current_contexts.extend(new_ctx)
                  # Re-deduplicate
-                 unique_contexts = {c['id']: c for c in contexts}.values()
-                 contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
+                 unique_contexts = {c['id']: c for c in current_contexts}.values()
+                 current_contexts = list(unique_contexts)[:self.config.aggregated_rule_limit]
             
             # Stop Conditions
             if response_obj.confident and not response_obj.needs_more_context:
                 break
-
-        total_duration = time.perf_counter() - overall_start
-        self._print_timing_table(timings, total_duration)
-        
-        return deduplicate_violations(violations), steps
+                
+        return violations, steps, timings
 
     def _print_timing_table(self, timings, total):
         print("\n" + "="*40)
@@ -160,6 +185,9 @@ class StyleAgent:
 
     async def _fetch_additional_context(self, queries: List[str]) -> List[Dict]:
         """Fetch more rules for specific queries."""
+        if not self.retriever:
+            return []
+            
         all_results = []
         for q in queries:
              # Just use base retrieval for speed on additional queries
@@ -167,7 +195,7 @@ class StyleAgent:
              all_results.extend(r_ctx)
         return all_results
 
-    def _build_prompt(self, paragraph, contexts, existing_violations, iteration):
+    def _build_prompt(self, text, contexts, existing_violations, iteration):
         current_date = datetime.now().strftime("%B %d, %Y")
         
         context_lines = [
@@ -186,7 +214,7 @@ class StyleAgent:
             system_prompt += "\nExplain your thinking process clearly in the 'thinking' field before listing violations."
 
         return system_prompt.format(current_date=current_date) + "\n" + PROMPT_AUDIT_USER_TEMPLATE.format(
-            paragraph=paragraph,
+            paragraph=text,
             context_block=context_block,
             reflection_block=reflection_block
         )

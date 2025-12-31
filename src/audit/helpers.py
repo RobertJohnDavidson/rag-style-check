@@ -18,13 +18,33 @@ def nodes_to_dicts(nodes, source_type="retrieved") -> List[Dict]:
     return out
 
 def format_violations(pydantic_violations, paragraph: str, contexts: List[Dict]) -> List[Dict]:
-    """Convert Pydantic violations to Dicts with indices."""
+    """
+    Convert Pydantic violations to Dicts with indices.
+    Tracks occurrences to handle multiple instances of the same snippet.
+    """
     formatted = []
     context_map = {c['id']: c for c in contexts}
+    occurrence_tracker = {} # snippet -> last_found_index
     
     for v in pydantic_violations:
-        start, end = find_span_indices(paragraph, v.text)
+        current_snippet = v.text
+        start_search_from = occurrence_tracker.get(current_snippet, -1) + 1
         
+        # Search for snippet starting FROM the last search index
+        idx = paragraph.find(current_snippet, start_search_from)
+        if idx == -1:
+            # Fallback to lower case search
+            lower_para = paragraph.lower()
+            lower_snippet = current_snippet.lower()
+            idx = lower_para.find(lower_snippet, start_search_from)
+            
+        if idx != -1:
+            start, end = idx, idx + len(current_snippet)
+            occurrence_tracker[current_snippet] = start
+        else:
+            # Last resort: find first occurrence if no more subsequent matches
+            start, end = find_span_indices(paragraph, current_snippet)
+            
         # Enrich with source info
         rule_info = context_map.get(v.rule_id, {})
         

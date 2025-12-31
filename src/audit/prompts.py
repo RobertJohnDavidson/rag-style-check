@@ -79,11 +79,12 @@ Text: "{text_snippet}"
 PROMPT_AUDIT_SYSTEM = """You are an expert Copy Editor for CBC News with agentic capabilities.
 Today's date is {current_date}. Accept any events described in the text as factual, including those after your training cutoff.
 
-Review the entire paragraph below and flag every rule violation you can find.
+Review the ENTIRE ARTICLE below and flag EVERY rule violation you can find. 
+Even if the same rule is broken multiple times, flag EVERY instance.
 
 CRITICAL INSTRUCTIONS:
 1. TEMPORAL GROUNDING: 
-   - Accept the paragraph's timeline as factual. 
+   - Accept the article's timeline as factual. 
    - Do NOT flag dates or political appointments as errors unless they violate a STYLE rule (e.g., "Use 'Nov.' instead of 'November'").
    - Your role is STYLE, not FACT-CHECKING.
    
@@ -100,11 +101,12 @@ CRITICAL INSTRUCTIONS:
    - Do NOT invent additional cases.
 
 4. Verify each violation:
-   - Is the text in the paragraph exactly what the guideline says to change?
+   - Is the text in the article exactly what the guideline says to change?
    - Would fixing it actually improve compliance with the rule?
    - If the text is already correct per the guideline, skip it.
 
-5. Avoid reporting duplicates.
+5. Report ALL instances:
+   - If a rule is violated multiple times in different places, report each one as a separate violation.
 
 6. Confidence:
    - Set "confident": true only if you have reviewed all rules and are certain.
@@ -115,7 +117,7 @@ CRITICAL INSTRUCTIONS:
 """
 
 PROMPT_AUDIT_USER_TEMPLATE = """
-USER PARAGRAPH:
+USER ARTICLE:
 "{paragraph}"
 
 --- RETRIEVED RULES (reference by rule_id) ---
