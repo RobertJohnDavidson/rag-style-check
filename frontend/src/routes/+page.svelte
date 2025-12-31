@@ -8,7 +8,8 @@
 		TestSelector, 
 		TestRunCompare,
 		BulkResults,
-		TuningDrawer
+		TuningDrawer,
+		TextViewer
 	} from '$lib/components/tuning';
 	import { 
 		auditText, 
@@ -43,6 +44,11 @@
 	let showTuning = $state(false);
 	let models = $state<ModelInfo[]>([]);
 	let tuningParams = $state<TuningParameters>({} as any);
+	
+	// Refactor State
+	let isAuditDone = $state(false);
+	let focusedViolationIndex = $state<number | null>(null);
+	let auditEditor = $state<any>(null);
 
 	async function handleAudit() {
 		if (!text.trim()) {
@@ -74,6 +80,7 @@
 				if (data) {
 					violations = data.violations;
 					processingTime = data.metadata?.processing_time_seconds || 0;
+					isAuditDone = true;
 				} else {
 					error = apiError || 'Audit failed';
 				}
@@ -94,6 +101,7 @@
 			selectedTest = null;
 			violations = [];
 			testResult = null;
+			isAuditDone = false;
 		} else {
 			error = apiError || 'Failed to generate text';
 		}
@@ -105,6 +113,26 @@
 		text = test.text;
 		violations = [];
 		testResult = null;
+		isAuditDone = false;
+	}
+
+	function handleHighlightClick(index: number) {
+		focusedViolationIndex = index;
+		// Reset after a tick to allow re-triggering if clicking same highlight
+		setTimeout(() => focusedViolationIndex = null, 100);
+	}
+
+	function handleAddViolationFromSelection(selectedText: string) {
+		if (auditEditor) {
+			auditEditor.addManualViolation(selectedText);
+		}
+	}
+
+	function handleEditAgain() {
+		isAuditDone = false;
+		violations = [];
+		testResult = null;
+		processingTime = 0;
 	}
 
 	function handleSelectionChange(ids: string[]) {
@@ -261,24 +289,56 @@
 							</div>
 						</div>
 
-						<Textarea.Root
-							bind:value={text}
-							placeholder="Paste text here to audit..."
-							class="min-h-[250px] text-lg resize-none focus-visible:ring-1"
-						/>
+						{#if isAuditDone}
+							<TextViewer
+								{text}
+								{violations}
+								onAddViolation={handleAddViolationFromSelection}
+								onHighlightClick={handleHighlightClick}
+							/>
 
-						<Button.Root
-							variant="default"
-							class="w-full h-12 text-lg font-bold transition-all hover:scale-[1.01] active:scale-[0.99]"
-							disabled={loading || !text.trim()}
-							onclick={handleAudit}
-						>
-							{#if loading}
-								<LoaderCircle class="mr-2 h-5 w-5 animate-spin" /> Auditing Style...
-							{:else}
-								Start Style Audit
-							{/if}
-						</Button.Root>
+							<div class="flex gap-4">
+								<Button.Root
+									variant="outline"
+									class="w-full h-12 text-lg font-medium"
+									onclick={handleEditAgain}
+								>
+									Discard & Edit Again
+								</Button.Root>
+
+								<Button.Root
+									variant="ghost"
+									class="w-full h-12 text-lg font-medium text-muted-foreground"
+									onclick={() => {
+										// Scroll to top of results
+										document
+											.getElementById('audit-results-header')
+											?.scrollIntoView({ behavior: 'smooth' });
+									}}
+								>
+									Scroll to Results
+								</Button.Root>
+							</div>
+						{:else}
+							<Textarea.Root
+								bind:value={text}
+								placeholder="Paste text here to audit..."
+								class="min-h-[250px] text-lg resize-none focus-visible:ring-1"
+							/>
+
+							<Button.Root
+								variant="default"
+								class="w-full h-12 text-lg font-bold transition-all hover:scale-[1.01] active:scale-[0.99]"
+								disabled={loading || !text.trim()}
+								onclick={handleAudit}
+							>
+								{#if loading}
+									<LoaderCircle class="mr-2 h-5 w-5 animate-spin" /> Auditing Style...
+								{:else}
+									Start Style Audit
+								{/if}
+							</Button.Root>
+						{/if}
 					</div>
 				</Card.Content>
 			</Card.Root>
@@ -329,7 +389,12 @@
 						</div>
 					{/if}
 
-					<AuditResultsEditor {violations} onSaveAsTest={handleSaveAsTest} />
+					<AuditResultsEditor
+						bind:this={auditEditor}
+						{violations}
+						focusedIndex={focusedViolationIndex}
+						onSaveAsTest={handleSaveAsTest}
+					/>
 				</section>
 			{/if}
 		</div>

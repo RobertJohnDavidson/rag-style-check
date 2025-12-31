@@ -7,3 +7,4 @@ export { default as TuningDrawer } from './TuningDrawer.svelte';
 export { default as ConfigProfileEditor } from './ConfigProfileEditor.svelte';
 export { default as BulkBenchmarkDashboard } from './BulkBenchmarkDashboard.svelte';
 export { default as TestRunDetail } from './TestRunDetail.svelte';
+export { default as TextViewer } from './TextViewer.svelte';
