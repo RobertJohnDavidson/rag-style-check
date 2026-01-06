@@ -5,10 +5,7 @@ import os
 sys.path.append(os.getcwd())
 
 from src.data.db import get_sync_engine
-from src.core.models.base import Base
-# Import all models to ensure they are registered with Base.metadata
-from src.core.models.tests import TestCase, TestResult
-from src.core.models.log import AuditLog
+from src.data.models import Base, TestCase, TestResult, AuditLog, StyleRule, RuleTrigger, RulePattern
 
 def init_db():
     engine = get_sync_engine()

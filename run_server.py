@@ -20,10 +20,23 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)), help="Port to bind to")
     
     parser.add_argument("--production", action="store_true", help="Run in production mode (no auto-reload)")
+    parser.add_argument("--reload", action="store_true", help="Explicitly enable auto-reload (default in non-production mode)")
     
     args = parser.parse_args()
     
-    reload = not args.production
+    # Reload is enabled if --reload is set OR if --production is NOT set
+    # Note: If both are set, production takes precedence? Or reload? 
+    # Let's say explicit --reload wins or just stick to "production disables it".
+    # Existing logic was: reload = not args.production.
+    # New logic: If --reload is passed, we want reload. If --production is passed, we want no reload.
+    # If neither, we assume development (reload).
+    
+    if args.reload:
+        reload = True
+    elif args.production:
+        reload = False
+    else:
+        reload = True
     
     print(f"🚀 Starting CBC News Style Checker API on {args.host}:{args.port}")
     print(f"   Mode: {'Production' if args.production else 'Development (auto-reload)'}")

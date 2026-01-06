@@ -84,7 +84,7 @@ def init_vector_store(engine: Engine, async_engine: AsyncEngine) -> PGVectorStor
         hybrid_search=True,
         perform_setup=False,
         text_search_config="english",
-        hnsw_kwargs=None,
+        hnsw_kwargs=settings.HNSW_KWARGS,
     )
 
 
@@ -98,7 +98,7 @@ def init_vector_store_for_ingest(engine: Engine, async_engine: AsyncEngine) -> P
         perform_setup=True,
         hybrid_search=True,
         text_search_config="english",
-        hnsw_kwargs=None,
+        hnsw_kwargs=settings.HNSW_KWARGS,
     )
 
 

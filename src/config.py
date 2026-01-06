@@ -19,8 +19,12 @@ class AppSettings(BaseModel):
     DB_USER: Optional[str] = os.getenv("DB_USER")
     DB_NAME: str = os.getenv("DB_NAME", "postgres")
     DB_REGION: str = os.getenv("DB_REGION", "us-central1")
-    TABLE_NAME: str = "rag_vectors"  # Name passed to PGVectorStore
-    ACTUAL_TABLE_NAME: str = "data_rag_vectors"  # Actual name in database (PGVectorStore adds 'data_' prefix)
+    TABLE_NAME: str = "style_guide"  # Name passed to PGVectorStore
+    
+    @property
+    def ACTUAL_TABLE_NAME(self) -> str:
+        """PGVectorStore adds 'data_' prefix to the table name."""
+        return f"data_{self.TABLE_NAME}"
     
     # Model Config
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "models/gemini-embedding-001")
