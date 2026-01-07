@@ -172,22 +172,14 @@ def main():
     # 4. Ingest Vectors with LlamaIndex
     # Note: LlamaIndex will handle data_style_guide creation/truncation if drop/setup are coordinated
     vector_store = init_vector_store_for_ingest(engine, async_engine)
-    
-    cache_path = "./ingestion_cache.json"
-    try:
-        cached_hashes = SimpleKVStore.from_persist_path(cache_path)
-    except FileNotFoundError:
-        cached_hashes = SimpleKVStore()
 
     pipeline = IngestionPipeline(
         transformations=[Settings.embed_model],
-        cache=IngestionCache(cache=cached_hashes),
         docstore=SimpleDocumentStore(),
     )
 
     print("🚀 Running Vector Ingestion Pipeline...")
     output_nodes = pipeline.run(nodes=nodes, show_progress=True)
-    cached_hashes.persist(cache_path)
 
     print("💾 Writing vectors to database...")
     from llama_index.core import StorageContext, VectorStoreIndex
