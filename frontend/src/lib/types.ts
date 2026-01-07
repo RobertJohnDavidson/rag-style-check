@@ -36,6 +36,11 @@ export interface TuningParameters {
 	sparse_top_k: number;
 	num_fusion_queries: number;
 	max_violation_terms: number;
+
+	// Rule Source Toggles
+	enable_vector_search: boolean;
+	enable_triggers: boolean;
+	enable_patterns: boolean;
 }
 
 export interface ModelInfo {

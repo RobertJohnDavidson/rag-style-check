@@ -34,7 +34,12 @@ export const TuningParametersSchema = z.object({
 	use_vertex_rerank: z.boolean().default(true),
 	sparse_top_k: z.number().int().min(1).max(50),
 	num_fusion_queries: z.number().int().min(1).max(10),
-	max_violation_terms: z.number().int().min(1).max(10)
+	max_violation_terms: z.number().int().min(1).max(10),
+
+	// Rule Source Toggles
+	enable_vector_search: z.boolean().default(true),
+	enable_triggers: z.boolean().default(true),
+	enable_patterns: z.boolean().default(true)
 });
 
 // Validation schema for CBC article URLs
