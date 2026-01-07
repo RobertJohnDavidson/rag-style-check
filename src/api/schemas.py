@@ -28,23 +28,10 @@ class AuditResponse(BaseModel):
         description="Additional metadata (processing time, model used, etc.)"
     )
 
-
-class TestCase(BaseModel):
-    id: str
-    text: str
-    expected_violations: List[Dict[str, str]]
-
-
-class TestSuiteRequest(BaseModel):
-    test_cases: List[TestCase]
-    suite_name: Optional[str] = Field(None, description="Name for the test suite")
-
-
 class ModelInfo(BaseModel):
     name: str
     description: str
     available: bool
-
 
 class GenerateTextResponse(BaseModel):
     text: str
