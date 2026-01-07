@@ -56,6 +56,53 @@
 
 		<div class="h-px bg-border my-2"></div>
 
+		<!-- Rule Sources -->
+		<div class="space-y-4">
+			<Label.Root class="text-xs font-bold uppercase tracking-wider text-muted-foreground"
+				>Rule Sources</Label.Root
+			>
+			<div class="grid grid-cols-1 gap-3">
+				<!-- Vector Search -->
+				<div
+					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+				>
+					<div class="flex flex-col">
+						<Label.Root class="text-sm font-medium">Vector Search</Label.Root>
+						<p class="text-[10px] text-muted-foreground font-bold italic tracking-wider">
+							Semantic similarity retrieval
+						</p>
+					</div>
+					<Switch.Root bind:checked={parameters.enable_vector_search} {disabled} />
+				</div>
+				<!-- Trigger Words -->
+				<div
+					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+				>
+					<div class="flex flex-col">
+						<Label.Root class="text-sm font-medium">Trigger Words</Label.Root>
+						<p class="text-[10px] text-muted-foreground font-bold italic tracking-wider">
+							Context-aware keyword matching
+						</p>
+					</div>
+					<Switch.Root bind:checked={parameters.enable_triggers} {disabled} />
+				</div>
+				<!-- Regex Patterns -->
+				<div
+					class="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
+				>
+					<div class="flex flex-col">
+						<Label.Root class="text-sm font-medium">Regex Patterns</Label.Root>
+						<p class="text-[10px] text-muted-foreground font-bold italic tracking-wider">
+							Structural & complex violations
+						</p>
+					</div>
+					<Switch.Root bind:checked={parameters.enable_patterns} {disabled} />
+				</div>
+			</div>
+		</div>
+
+		<div class="h-px bg-border my-2"></div>
+
 		<!-- LLM Parameters -->
 		<div class="space-y-4">
 			<Label.Root class="text-xs font-bold uppercase tracking-wider text-muted-foreground"

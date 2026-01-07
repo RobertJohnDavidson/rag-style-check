@@ -129,6 +129,8 @@
 </script>
 
 <div class="relative">
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="prose dark:prose-invert max-w-none p-6 rounded-xl border bg-card text-card-foreground shadow-sm whitespace-pre-wrap leading-relaxed text-lg focus:outline-none min-h-[300px]"
 		onmouseup={handleMouseUp}
