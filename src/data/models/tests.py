@@ -10,6 +10,7 @@ from .base import Base
 class TestCase(Base):
     """ORM model for test_cases table."""
     __tablename__ = 'test_cases'
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     label: Mapped[str] = mapped_column(Text, nullable=False)
@@ -22,7 +23,7 @@ class TestCase(Base):
 
     # Relationship to test results
     test_results: Mapped[List["TestResult"]] = relationship(
-        "TestResult",
+        "src.data.models.tests.TestResult",
         back_populates="test_case",
         cascade="all, delete-orphan"
     )
@@ -31,6 +32,7 @@ class TestCase(Base):
 class TestResult(Base):
     """ORM model for test_results table."""
     __tablename__ = 'test_results'
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     test_id: Mapped[uuid.UUID] = mapped_column(
@@ -50,6 +52,6 @@ class TestResult(Base):
 
     # Relationship to test case
     test_case: Mapped["TestCase"] = relationship(
-        "TestCase",
+        "src.data.models.tests.TestCase",
         back_populates="test_results"
     )

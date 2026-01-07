@@ -26,7 +26,7 @@ class TagMatcher:
         for rule_id, text in triggers:
             if text:
                 # Store rule_id as the value associated with the key
-                self.automaton.add_word(text.lower(), rule_id)
+                self.automaton.add_word(text, rule_id)
                 count += 1
         
         self.automaton.make_automaton()
@@ -47,7 +47,7 @@ class TagMatcher:
         
         # iter() returns tuples of (end_index, value)
         # value is what we stored in add_word (the rule_id)
-        for _, rule_id in self.automaton.iter(text.lower()):
+        for _, rule_id in self.automaton.iter(text):
             found_rule_ids.add(rule_id)
             
         return found_rule_ids
