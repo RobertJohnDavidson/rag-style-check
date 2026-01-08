@@ -113,6 +113,20 @@ class TuningParameters(BaseModel):
         description="Maximum potential violation terms to identify per paragraph"
     )
 
+    # Rule Source Toggles
+    enable_vector_search: bool = Field(
+        default=True,
+        description="Enable semantic similarity retrieval"
+    )
+    enable_triggers: bool = Field(
+        default=True,
+        description="Enable context-aware keyword matching"
+    )
+    enable_patterns: bool = Field(
+        default=True,
+        description="Enable structural and complex pattern matching"
+    )
+
 
 class TestUpdateInput(BaseModel):
     """Schema for updating an existing test case"""

@@ -18,6 +18,7 @@ from pathlib import Path
 from uuid import UUID
 import nest_asyncio
 import logging
+import ahocorasick
 nest_asyncio.apply()
 
 # Initialize logger
@@ -36,8 +37,13 @@ from src.api.schemas import (
     AuditRequest,
     AuditResponse,
     Violation,
+    AuditResponse,
+    Violation,
     GenerateTextResponse
 )
+from src.audit.tag_matcher import TagMatcher
+from src.data.models.rules import RuleTrigger
+from sqlalchemy import select
 from src.api.test_schemas import (
     TestInput,
     TestRecord,
@@ -59,7 +65,10 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 # Global State
 auditor: Optional[StyleAuditor] = None
 test_manager: Optional[TestManager] = None
+auditor: Optional[StyleAuditor] = None
+test_manager: Optional[TestManager] = None
 db_engine: Optional[AsyncEngine] = None
+tag_matcher: Optional[TagMatcher] = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,7 +76,7 @@ async def lifespan(app: FastAPI):
     Lifespan context manager for startup and shutdown events.
     Initializes DB connection, LLM settings, and the Auditor.
     """
-    global auditor, test_manager, db_engine
+    global auditor, test_manager, db_engine, tag_matcher
     sync_db_engine = None
     
     print("🚀 Starting up Style Checker API...")
@@ -108,10 +117,26 @@ async def lifespan(app: FastAPI):
     else:
         index = None
 
+    # 4. Initialize Tag Matcher (Aho-Corasick)
+    try:
+        tag_matcher = TagMatcher()
+        async with get_async_session() as session:
+            stmt = select(RuleTrigger.rule_id, RuleTrigger.trigger_text)
+            result = await session.execute(stmt)
+            triggers = result.all() # List of (rule_id, trigger_text) tuples
+            
+            count = tag_matcher.build(triggers)
+            print(f"✅ TagMatcher built with {count} triggers.")
+            
+    except Exception as e:
+        print(f"❌ TagMatcher init failed: {e}")
+        tag_matcher = None
+
     # 5. Initialize Auditor
     if index:
         auditor = StyleAuditor(
-            index=index
+            index=index,
+            tag_matcher=tag_matcher
         )
         print("✅ StyleAuditor initialized.")
     else:
@@ -125,7 +150,7 @@ async def lifespan(app: FastAPI):
         print("✅ TestManager initialized.")
     except Exception as e:
         print(f"❌ TestManager init failed: {e}")
-
+        
     yield
     
     # Shutdown

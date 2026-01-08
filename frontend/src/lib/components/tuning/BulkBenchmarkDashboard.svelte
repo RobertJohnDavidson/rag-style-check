@@ -171,6 +171,14 @@
 									onclick={() =>
 										cellResults.length > 0 &&
 										openDetails(test, cellResults[cellResults.length - 1])}
+									onkeydown={(e) => {
+										if ((e.key === 'Enter' || e.key === ' ') && cellResults.length > 0) {
+											e.preventDefault();
+											openDetails(test, cellResults[cellResults.length - 1]);
+										}
+									}}
+									role="button"
+									tabindex="0"
 								>
 									{#if cellResults.length > 0}
 										<div class="flex flex-col items-center gap-1">
@@ -241,6 +249,14 @@
 					<div
 						class="flex items-center gap-4 cursor-pointer"
 						onclick={() => testCase && openDetails(testCase, run)}
+						onkeydown={(e) => {
+							if ((e.key === 'Enter' || e.key === ' ') && testCase) {
+								e.preventDefault();
+								openDetails(testCase, run);
+							}
+						}}
+						role="button"
+						tabindex="0"
 					>
 						<div class="flex flex-col items-end">
 							<span class="text-sm font-bold {getStatusColor(status)}">

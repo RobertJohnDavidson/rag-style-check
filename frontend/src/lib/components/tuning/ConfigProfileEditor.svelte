@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { Button, Input, Card, Tabs, Label } from '$lib/components/ui';
-	import { Plus, Trash2, Settings2, Copy } from '@lucide/svelte';
+	import { Plus, Trash2, Copy } from '@lucide/svelte';
 	import TuningParametersComponent from './TuningParameters.svelte';
 	import type { TuningParameters, ModelInfo } from '$lib/types';
 
@@ -45,7 +45,10 @@
 				use_vertex_rerank: true,
 				sparse_top_k: 10,
 				num_fusion_queries: 3,
-				max_violation_terms: 5
+				max_violation_terms: 5,
+				enable_vector_search: true,
+				enable_triggers: true,
+				enable_patterns: true
 			}
 		};
 		profiles = [...profiles, newProfile];

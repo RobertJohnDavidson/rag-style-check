@@ -32,57 +32,6 @@ class StyleAgent:
         self.retriever = retriever
         self.reranker = reranker
 
-    async def audit_paragraph(self, paragraph: str) -> Tuple[List[Dict], List[Dict]]:
-        """
-        [DEPRECATED/LEGACY] Original monolithic flow: Retrieve -> Rerank -> Audit Loop.
-        Maintained for backward compatibility or simple single-shot audits.
-        """
-        if not self.retriever or not self.reranker:
-             raise ValueError("Retriever and Reranker are required for audit_paragraph.")
-             
-        steps = []
-        overall_start = time.perf_counter()
-        timings = []
-        
-        # 1. Retrieval
-        logger.info("🔍 Agent: Retrieval...")
-        start_r = time.perf_counter()
-        retrieved_contexts, retrieval_details = await self.retriever.retrieve(paragraph)
-        duration_r = time.perf_counter() - start_r
-        timings.append(("Retrieval", duration_r))
-        
-        steps.append({
-            "type": "retrieval",
-            "duration_seconds": duration_r,
-            "details": retrieval_details
-        })
-        
-        # 2. Reranking
-        logger.info("🔍 Agent: Reranking...")
-        start_rk = time.perf_counter()
-        reranked_contexts, rerank_details = await self.reranker.rerank(retrieved_contexts, paragraph)
-        duration_rk = time.perf_counter() - start_rk
-        timings.append(("Reranking", duration_rk))
-        
-        steps.append({
-            "type": "reranking",
-            "duration_seconds": duration_rk,
-            "details": rerank_details
-        })
-        
-        current_contexts = reranked_contexts if reranked_contexts else retrieved_contexts
-        
-        # 3. Audit Loop
-        violations, loop_steps, loop_timings = await self._run_audit_loop(paragraph, current_contexts)
-        
-        steps.extend(loop_steps)
-        timings.extend(loop_timings)
-        
-        total_duration = time.perf_counter() - overall_start
-        self._print_timing_table(timings, total_duration)
-        
-        return deduplicate_violations(violations), steps
-
     async def audit_full_article(self, text: str, rules: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Tuple[str, float]]]:
         """
         Executes the audit phase against the full article text using pre-fetched rules.

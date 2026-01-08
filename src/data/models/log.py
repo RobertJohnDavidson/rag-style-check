@@ -9,6 +9,7 @@ from .base import Base
 class AuditLog(Base):
     """ORM model for audit_logs table."""
     __tablename__ = 'audit_logs'
+    __table_args__ = {'extend_existing': True}
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     test_id: Mapped[Optional[uuid.UUID]] = mapped_column(

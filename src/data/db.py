@@ -84,7 +84,7 @@ def init_vector_store(engine: Engine, async_engine: AsyncEngine) -> PGVectorStor
         hybrid_search=True,
         perform_setup=False,
         text_search_config="english",
-        hnsw_kwargs=settings.HNSW_KWARGS,
+        # hnsw_kwargs=settings.HNSW_KWARGS, # Avoid passing this if not setting up, as it can cause issues if already exists
     )
 
 

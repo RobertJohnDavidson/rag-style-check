@@ -169,27 +169,6 @@ export async function runTest(testId: string, tuningParameters?: TuningParameter
 	}
 }
 
-// Generate tests from article or synthetically
-export async function generateTests(request: GenerateTestsRequest): Promise<ApiResponse<GenerateTestsResponse>> {
-	try {
-		const response = await fetch(`${getApiBase()}/api/generate-tests`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(request)
-		});
-
-		if (!response.ok) {
-			const error = await response.json().catch(() => ({ detail: 'Failed to generate tests' }));
-			throw new Error(error.detail || 'Failed to generate tests');
-		}
-
-		const data = await response.json();
-		return { data };
-	} catch (err) {
-		return { error: err instanceof Error ? err.message : 'Failed to generate tests' };
-	}
-}
-
 // Get default tuning parameters
 export async function getTuningDefaults(): Promise<ApiResponse<TuningParameters>> {
 	try {

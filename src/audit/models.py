@@ -31,6 +31,12 @@ class AuditorConfig(BaseModel):
     use_llm_rerank: bool = False
     use_vertex_rerank: bool = True
     include_thinking: bool = False
+
+    # Rule Source Toggles
+    enable_vector_search: bool = True
+    enable_triggers: bool = True
+    enable_patterns: bool = True
+
     sparse_top_k: int = 10
     num_fusion_queries: int = 3
     max_violation_terms: int = 5
